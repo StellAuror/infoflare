@@ -1,35 +1,43 @@
+### Load packages
 # webshot::install_phantomjs()
 pacman::p_load(
   "webshot",
   "magick"
 )
-subfolder <- list.files()[1]
-html <- list.files(list.files()[1], pattern = "\\.html")[1]
 
-webshot::webshot(paste0(subfolder, "/", html), file = "test.png")
+### Look up sub-folder & .html names 
+subfolders <- list.files()[1]
+subfolders <- subfolders[grep("\\b\\d{4}-\\d{2}-\\d{2}\\b", subfolders)]
 
+### Initialize markdown section
+md_auto <- "## Gallery \n"
 
-md_const <- glue::glue("
-                      # InfoFlare
+### Create .PNGs & the markdown section content
+## for each sub-folder
+lapply(subfolders, function(folder) {
+  # search .HTMLs
+  htmls <- list.files(folder, pattern = "\\.html")
+  # initialize markdown subsection
+  md_auto <<- glue::glue(md_auto, "\n ### ", folder)
+  ## for each html file
+  lapply(htmls, function(file) {
+    # defining constants for the file
+    len <- nchar(file) - 4
+    inputFile <- paste0(folder, "/", file)
+    outputFile <- paste0(folder, "/", substr(file, 1, len), "png")
+    # convert .html to .png & add embed the link
+    webshot::webshot(inputFile, file = outputFile)
+    md_auto <<- glue::glue(md_auto, "\n ![image](", outputFile, ")")
+  })
+  md_auto <<- glue::glue(md_auto, "\n")
+})
 
-                      ## Description
-                      
-                      A collection of source codes for the Info Flare project run on the x.com platform. The aim of the project is to share interesting insights based on reliable sources of information.
-                      
-                      ## Structure
-                      
-                      Folders are named by the creation (or the latest modification) date. Each folder contains a collection of visualizations (mostly .svg outputs saved as .html) and the source code (.qmd).
+### load the README constant
+fileConn <- file("const.md")
+md_const <- readLines(fileConn)
+close(fileConn)
 
-                       ")
-
-md_auto <- glue::glue(
-  "
-  ## Gallery
-  
-  ![image](test.png)
-  "
-)
-
-fileConn <- file("output.md")
-writeLines(glue::glue(md_const, md_auto), fileConn)
+### Merge README constant and generated sections
+fileConn <- file("README.md")
+writeLines(glue::glue(paste0(md_const, collapse = "\n"), md_auto), fileConn)
 close(fileConn)
