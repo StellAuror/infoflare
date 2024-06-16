@@ -1,0 +1,493 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+# World Open Data Bank \| GDP per Capita \| Europe
+
+## Libraries & Options
+
+```{r}
+pacman::p_load(
+  "wbstats", # World Bank Open Data 
+  "tidyverse", # Data Manipulation
+  "extrafont", # Fonts for charts
+  "svglite", # .svg device
+  "ggtext", # mardkwon elements
+  "ggh4x" # strip conditional formatting
+)
+
+options(width = 10000)
+```
+
+## Default Theme
+
+```{r}
+theme_set(theme_minimal())
+theme_update(
+    panel.grid.minor = element_line(size = 0.25),
+    panel.grid.major = element_line(size = 0.75),
+    plot.title = element_text(face = "bold", size = 22),
+    plot.subtitle = element_text(size = 16),
+    text = element_text(color = "#5d524b", family = "Segoe UI", size = 18),
+    panel.background = element_rect(fill = '#fff9f5', color = '#fff9f5'),
+    plot.background = element_rect(fill = '#fff9f5', color = '#fff9f5'),
+    panel.grid = element_line(color = "#f3ede9"),
+    axis.text.x = element_text(angle = 90, color = "#9b928c"),
+    axis.title = element_text(face = "bold", size = 15),
+    axis.title.y = element_text(vjust = +2),
+    axis.title.x = element_text(vjust = -0.75)
+)
+```
+
+## Fetching Data
+
+```{r}
+# wbstats::wbindicators("en")
+
+if (!exists("dfGDP", envir = .GlobalEnv)) {
+  dfGDP <- 
+    wbstats::wb(indicator = "NY.GDP.PCAP.CD")
+  
+  dfGDP <- 
+    left_join(
+      dfGDP,
+      countrycode::codelist |> select(iso3c, region, region23),
+      join_by(iso3c == iso3c)
+    )
+}
+
+```
+
+## Data overview
+
+```{r}
+s <- svgstring(height = 10, width = 12, scaling = 1)
+dfGDP |>
+  na.omit() |>
+  ggplot(aes(
+    x = as.numeric(date),
+    y = value
+  )) +
+  geom_line(aes(
+    group = country,
+    color = if_else(region == "Europe & Central Asia", "A", "B")
+  ), show.legend = F) + 
+  scale_color_manual(values = c("#F57251", "#cccccc")) + 
+  facet_wrap(~region) + 
+  labs(
+    x = "",
+    y = "GDP per Capita",
+    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    title = "Data Overview, world regions breakdown"
+  ) 
+
+htmltools::HTML(s())
+invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "data-overview-1.html")
+```
+
+```{r}
+s <- svgstring(height = 10, width = 12, scaling = 1)
+
+dfGDP |>
+  na.omit() |>
+  group_by(date, region) |>
+  summarise(value = mean(value)) |>
+  mutate(region2 = if_else(region == "Europe & Central Asia", "A", "B")) |>
+  ggplot(aes(
+    x = as.numeric(date),
+    y = value
+  )) +
+  geom_line(aes(
+    group = region,
+    color = region2
+  ), show.legend = F, size = 3) + 
+  scale_color_manual(values = c("#F57251", "#cccccc")) + 
+  labs(
+    x = "",
+    y = "GDP per Capita",
+    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    title = "Data Overview, world regions breakdown over years"
+  ) 
+
+htmltools::HTML(s())
+invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "data-overview-2.html")
+```
+
+## Checking if data is continoues
+
+```{r}
+s <- svgstring(height = 10, width = 12, scaling = 1)
+
+dfGDP |> 
+  filter(
+    region %in% "Europe & Central Asia",
+    !(region23 %in% c("Western Asia", "Central Asia", "Northern America")) 
+  ) |>
+  group_by(country) |>
+  mutate(date = as.numeric(date), datem = min(date, na.rm = T)) |> #filter(if_else(country == "United Kingdom", !between(), date>=1)) |>
+  arrange(country, date) |>
+  mutate(date2 = if_else(abs(lag(date) - date) == 1, lag(date), NA)) |>
+  ggplot(aes(
+    x = date,
+    y = reorder(country, -datem)
+  )) +
+  geom_segment(aes(xend = date2, yend = reorder(country, -datem)), linewidth = 8, color = "#F57251") + 
+  labs(
+    x = "Years",
+    y = "",
+    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    title = "Is data continouse?"
+  ) +
+  theme(plot.subtitle = element_markdown())
+
+htmltools::HTML(s())
+invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "check-1.html")
+```
+
+## GDP Per Capita
+
+### subregion
+
+```{r}
+s <- svgstring(height = 6, width = 12, scaling = 1)
+
+dfGDP |> 
+  filter(
+    region %in% "Europe & Central Asia",
+    !(region23 %in% c("Western Asia", "Central Asia", "Northern America")) 
+  ) |>
+  ggplot(aes(
+    x = as.numeric(date),
+    y = value
+  )) +
+  geom_line(aes(group = country, color = region23), size = 1.3, show.legend = F) +
+  scale_color_manual(values = c("#0274BD", "#C4AD9D", "#000000", "#F57251")) +
+  scale_y_continuous(
+    breaks = c(10^5, 10^5*2),
+    labels = c("100k", "200k"),
+    minor_breaks = seq(0, 10^5*2, 10^4*2.5)
+  ) + 
+  labs(
+    x = "",
+    y = "GDP per Capita",
+    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    title = "European GDP per Capita  (1960-2022)",
+    subtitle = glue::glue("
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> divided by 4 european subregions \n
+      <span style = 'color: #F57251;'><b>Western</b></span>
+      <span style = 'color: #C4AD9D;'><b>Northen</b></span>
+      <span style = 'color: #000000;'><b>Southern</b></span>
+      <span style = 'color: #0274BD;'><b>Eastern</b></span>
+      ")
+  ) + 
+    theme(
+      plot.subtitle = element_markdown(),
+      panel.grid = element_line(color = "#fff9f5"),
+      panel.grid.major.y = element_line(color = "#ede3dc", linetype = "dashed"),
+      axis.text = element_text(color = "#9b928c")
+    )
+
+htmltools::HTML(s())
+invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "subregion-1.html")
+```
+
+### YoY & subregion
+
+```{r}
+s <- svgstring(height = 6, width = 12, scaling = 1)
+dfGDP |> 
+  mutate(date = as.numeric(date)) |>
+  group_by(country) |>
+  arrange(country, date) |>
+  mutate(
+    YoY = if_else(date - lag(date) == 1, value / lag(value), 0), # Year over Year
+    gridRow = if_else(region23 %in% c("Eastern Europe", "Southern Europe"), "1", "2")
+  ) |> 
+  filter(YoY != 0) |>
+  filter(
+    region %in% "Europe & Central Asia",
+    !(region23 %in% c("Western Asia", "Central Asia", "Northern America")) 
+  ) |>
+  ggplot(aes(
+    x = as.numeric(date),
+    y = YoY
+  )) +
+  geom_point(aes(group = country, color = region23), size = 1.3, show.legend = F, alpha = .4) +
+  geom_smooth(se = F, method = "loess", aes(color = region23), show.legend = F) +
+  scale_color_manual(values = c("#0274BD", "#C4AD9D", "#000000", "#F57251"))+ 
+  theme(
+    plot.subtitle = element_markdown(lineheight = 1.1),
+    panel.grid = element_line(color = "#fff9f5"),
+    panel.grid.major.y = element_line(color = "#ede3dc", linetype = "dashed"),
+    axis.text = element_text(color = "#9b928c"),
+    strip.text = element_text(size = 18, face = "bold")
+  ) +
+  facet_wrap2(
+    ~region23,
+     strip = strip_themed(
+       text_x = list(
+         element_text(color = "#0274BD"),
+         element_text(color = "#C4AD9D"),
+         element_text(color = "#000000"),
+         element_text(color = "#F57251")
+       )
+     )
+  )  + 
+  labs(
+    x = "",
+    y = "GDP per Capita",
+    color = "Subregion",
+    title = "GDP per Capita YoY growth (1960-2022)",
+   caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    subtitle = glue::glue(
+      "
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> each dot represents country in a given year <br>
+      <span style = 'color: #5d524b; font-size: 17px'><b>▶</b></span> european subregions breakdown
+      "
+    )
+  ) +
+  scale_y_continuous(
+    breaks = c(.5, 1, 1.5),
+    labels = c("0.5", "1", "1.5")
+  ) +
+  scale_x_continuous(
+    breaks = seq(1960, 2022, 5)
+  ) 
+htmltools::HTML(s())
+invisible(dev.off())
+
+htmltools::save_html(htmltools::HTML(s()), "yoy-subregion-1.html")
+```
+
+```{r}
+s <- svgstring(height = 6, width = 12, scaling = 1)
+dfGDP |> 
+  mutate(date = as.numeric(date)) |>
+  group_by(country) |>
+  arrange(country, date) |>
+  mutate(
+    YoY = if_else(date - lag(date) == 1, value / lag(value), 0) # Year over Year
+  ) |> 
+  filter(YoY != 0) |>
+  filter(
+    region %in% "Europe & Central Asia",
+    !(region23 %in% c("Western Asia", "Central Asia", "Northern America")) 
+  ) |>
+  ggplot(aes(
+    x = as.numeric(date),
+    y = YoY
+  )) +
+  geom_line(aes(
+    group = country,
+    color = region23,
+    alpha = .05
+  ), size = 1.3, show.legend = F) +
+  scale_color_manual(values = c("#0274BD", "#C4AD9D", "#000000", "#F57251"))+ 
+  theme(
+    plot.subtitle = element_markdown(lineheight = 1.1),
+    panel.grid = element_line(color = "#fff9f5"),
+    panel.grid.major.y = element_line(color = "#ede3dc", linetype = "dashed"),
+    axis.text = element_text(color = "#9b928c"),
+    strip.text = element_text(size = 18, face = "bold")
+  ) +
+  facet_wrap2(
+    ~region23,
+     strip = strip_themed(
+       text_x = list(
+         element_text(color = "#0274BD"),
+         element_text(color = "#C4AD9D"),
+         element_text(color = "#000000"),
+         element_text(color = "#F57251")
+       )
+     )
+  ) + 
+  labs(
+    x = "",
+    y = "GDP per Capita",
+    color = "Subregion",
+    title = "GDP per Capita YoY growth (1960-2022)",
+    subtitle = glue::glue(
+      "
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> each dot represents country in a given year <br>
+      <span style = 'color: #5d524b; font-size: 17px'><b>▶</b></span> divided by european subregions
+      "
+    )
+  ) +
+  scale_y_continuous(
+    breaks = c(.5, 1, 1.5),
+    labels = c("0.5", "1", "1.5")
+  ) +
+  scale_x_continuous(
+    breaks = seq(1960, 2022, 5)
+  ) 
+htmltools::HTML(s())
+invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "yoy-subregion-2.html")
+```
+
+### subregion & highlight
+
+```{r}
+dfGDP |> 
+  mutate(date = as.numeric(date)) |>
+  group_by(country) |>
+  arrange(country, date) |>
+  mutate(
+    YoY = if_else(date - lag(date) == 1, value / lag(value), 0) # Year over Year
+  ) |> 
+  filter(
+    region %in% "Europe & Central Asia",
+    !(region23 %in% c("Western Asia", "Central Asia", "Northern America")),
+    date == 2022
+  )  |> pull(YoY) |> summary() 
+
+dfGDPcore <- dfGDP |> 
+  mutate(date = as.numeric(date)) |>
+  group_by(country) |>
+  arrange(country, date) |>
+  mutate(
+    YoY = if_else(date - lag(date) == 1, value / lag(value), 0) # Year over Year
+  ) |> 
+  filter(
+    region %in% "Europe & Central Asia",
+    !(region23 %in% c("Western Asia", "Central Asia", "Northern America")),
+  )
+
+growingCountries <- 
+  dfGDPcore |>
+  filter(
+    date == 2022,
+    YoY > 1
+  ) |> pull(country)
+
+leadinCountries <- 
+  dfGDPcore |>
+  filter(
+    date == 2022,
+    YoY > 1.0468
+  ) |> pull(country)
+```
+
+```{r}
+s <- svgstring(height = 8, width = 9, scaling = 1)
+dfGDP |> 
+  mutate(date = as.numeric(date)) |>
+  filter(
+    region %in% "Europe & Central Asia",
+    !(region23 %in% c("Western Asia", "Central Asia", "Northern America")),
+    date == 2022
+  ) |>
+  mutate(
+    isGrowing = case_when(
+      country %in% leadinCountries ~ "top",
+      country %in% growingCountries ~ "middle",
+      T ~ "bottom"
+    )
+  ) |>
+  count(region23, isGrowing) |>
+  ggplot(aes(
+    x = region23,
+    y = n,
+    fill = reorder(isGrowing, desc(isGrowing))
+  )) +
+  geom_col(show.legend = F) +
+  scale_fill_manual(values = c("middle" = "#C4AD9D", "top" = "#F57251", "bottom" = "#000000")) +
+  geom_text(aes(
+    label = n
+  ), color = "white", position = position_stack(vjust = .5), size = 6) +
+  scale_y_continuous(breaks = NULL) + 
+  labs(
+    x = "GDP per Capita YoY",
+    y = "",
+    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    title = "YoY GDP per Capita for European Countries (2022/2021)",
+    subtitle = glue::glue(
+      "
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> europen regions breakdown<br>
+      <span style = 'color: #5d524b; font-size: 17px'><b>▶</b></span> highlighting:
+      <span style = 'color: #000000; font-size: 17px;'><b>deteriorating standards</b></span>, 
+      <span style = 'color: #c4ad9d; font-size: 17px;'><b>rising standards</b></span>, 
+      <span style = 'color: #F57251; font-size: 17px;'><b>top (4th Qu.)</b></span>
+      "
+    )
+  ) + 
+  theme(
+    panel.grid = element_line(color = "#fff9f5"),
+    plot.subtitle = element_markdown(lineheight = 1.1)
+  )
+
+htmltools::HTML(s())
+invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "subregion-highlight-1.html")
+```
+
+### subregion, country & hughlight
+
+```{r}
+s <- svgstring(height = 8, width = 12, scaling = 1)
+dfGDP |> 
+  mutate(date = as.numeric(date)) |>
+  group_by(country) |>
+  arrange(country, date) |>
+  mutate(
+    YoY = if_else(date - lag(date) == 1, value / lag(value), 0) # Year over Year
+  ) |>
+  filter(
+    region %in% "Europe & Central Asia",
+    !(region23 %in% c("Western Asia", "Central Asia", "Northern America")),
+    date == 2022
+  ) |>
+  mutate(
+    isGrowing = case_when(
+      country %in% leadinCountries ~ "top",
+      country %in% growingCountries ~ "middle",
+      T ~ "bottom"
+    )
+  ) |>
+  ggplot() +
+  ggrepel::geom_text_repel(aes(
+    y = country,
+    x = YoY,
+    label = country,
+    color = isGrowing
+  ), show.legend = F, fontface = "bold") + 
+  geom_point(aes(
+    y = country,
+    x = YoY,
+    color = isGrowing
+  ), show.legend = F) + 
+  theme(
+    axis.text.y = element_blank(),
+    plot.subtitle = element_markdown(lineheight = 1.1),
+    strip.text = element_text(color = "#4a433e", face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.border = element_rect(color = "#f3ede9", fill = NA, linewidth = 2),
+    plot.background = element_rect(fill = "#fff9f5", color = NA),
+  ) +
+  scale_color_manual(values = c("middle" = "#C4AD9D", "top" = "#F57251", "bottom" = "#000000")) +
+  labs(
+    x = "GDP per Capita YoY",
+    y = "",
+    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    title = "YoY GDP per Capita for European Countries (2022/2021)",
+    subtitle = glue::glue(
+      "
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> europen regions breakdown, divided by country<br>
+      <span style = 'color: #5d524b; font-size: 17px'><b>▶</b></span> highlighting:
+      <span style = 'color: #000000; font-size: 17px;'><b>deteriorating standards</b></span>, 
+      <span style = 'color: #c4ad9d; font-size: 17px;'><b>rising standards</b></span>, 
+      <span style = 'color: #F57251; font-size: 17px;'><b>top (4th Qu.)</b></span>
+      "
+    )
+  ) + 
+  facet_wrap(~region23, scales = "free_y")
+htmltools::HTML(s())
+invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "subregions-countries-highlight-2.html")
+```
