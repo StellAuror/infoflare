@@ -9,9 +9,8 @@ Folders are named by the creation (or the latest modification) date. Each folder
 ## Gallery 
 
 <details><summary>2024-06-16</summary>
- ![image](2024-06-16/subregion-1.png)
- ![image](2024-06-16/subregion-highlight-1.png)
- ![image](2024-06-16/subregions-countries-highlight-2.png)
- ![image](2024-06-16/yoy-subregion-1.png)
- ![image](2024-06-16/yoy-subregion-2.png)</details> 
-
+ <img src="2024-06-16/subregion-1.png">
+ <img src="2024-06-16/subregion-highlight-1.png">
+ <img src="2024-06-16/subregions-countries-highlight-2.png">
+ <img src="2024-06-16/yoy-subregion-1.png">
+ <img src="2024-06-16/yoy-subregion-2.png"></details> 
