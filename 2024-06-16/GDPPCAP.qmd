@@ -404,7 +404,7 @@ dfGDP |>
   ), color = "white", position = position_stack(vjust = .5), size = 6) +
   scale_y_continuous(breaks = NULL) + 
   labs(
-    x = "GDP per Capita YoY",
+    x = "",
     y = "",
     caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\n MK"),
     title = "YoY GDP per Capita for European Countries (2022/2021)",

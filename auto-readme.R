@@ -6,11 +6,11 @@ pacman::p_load(
 )
 
 ### Look up sub-folder & .html names 
-subfolders <- list.files()[1]
+subfolders <- list.files()
 subfolders <- subfolders[grep("\\b\\d{4}-\\d{2}-\\d{2}\\b", subfolders)]
 
 ### Initialize markdown section
-md_auto <- "## Gallery \n"
+md_auto <- "\n ## Gallery \n"
 
 ### Create .PNGs & the markdown section content
 ## for each sub-folder
@@ -18,7 +18,7 @@ lapply(subfolders, function(folder) {
   # search .HTMLs
   htmls <- list.files(folder, pattern = "\\.html")
   # initialize markdown subsection
-  md_auto <<- glue::glue(md_auto, "\n ### ", folder)
+  md_auto <<- glue::glue(md_auto, "\n <details><summary>", folder, "</summary>")
   ## for each html file
   lapply(htmls, function(file) {
     # defining constants for the file
@@ -29,7 +29,7 @@ lapply(subfolders, function(folder) {
     webshot::webshot(inputFile, file = outputFile, selector = ".svglite", zoom = 2)
     md_auto <<- glue::glue(md_auto, "\n ![image](", outputFile, ")")
   })
-  md_auto <<- glue::glue(md_auto, "\n")
+  md_auto <<- glue::glue(md_auto, "</details> \n")
 })
 
 ### load the README constant
