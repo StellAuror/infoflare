@@ -1,9 +1,3 @@
----
-output: html_document
-editor_options: 
-  chunk_output_type: inline
----
-
 # World Open Data Bank \| GDP per Capita \| Europe
 
 ## Libraries & Options
@@ -17,8 +11,6 @@ pacman::p_load(
   "ggtext", # mardkwon elements
   "ggh4x" # strip conditional formatting
 )
-
-options(width = 10000)
 ```
 
 ## Default Theme

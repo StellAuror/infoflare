@@ -1,0 +1,115 @@
+# World Open Data Bank \| GDP per Capita \| Europe
+
+## Libraries & Options
+
+```{r}
+pacman::p_load(
+  "wbstats", # World Bank Open Data 
+  "tidyverse", # Data Manipulation
+  "extrafont", # Fonts for charts
+  "svglite", # .svg device
+  "ggtext", # mardkwon elements
+  "ggh4x" # strip conditional formatting
+)
+```
+
+## Default Theme
+
+```{r}
+theme_set(theme_minimal())
+theme_update(
+    panel.grid.minor = element_line(size = 0.25),
+    panel.grid.major = element_line(size = 0.75),
+    plot.title = element_text(face = "bold", size = 22),
+    plot.subtitle = element_text(size = 16),
+    text = element_text(color = "#5d524b", family = "Segoe UI", size = 18),
+    panel.background = element_rect(fill = '#fff9f5', color = '#fff9f5'),
+    plot.background = element_rect(fill = '#fff9f5', color = '#fff9f5'),
+    panel.grid = element_line(color = "#f3ede9"),
+    axis.text.x = element_text(angle = 90, color = "#9b928c"),
+    axis.title = element_text(face = "bold", size = 15),
+    axis.title.y = element_text(vjust = +2),
+    axis.title.x = element_text(vjust = -0.75)
+)
+```
+
+## Fetching Data
+
+```{r}
+# wbstats::wbindicators("en")
+
+if (!exists("dfGDP", envir = .GlobalEnv)) {
+  dfGDP <- 
+    wbstats::wb(indicator = "NY.GDP.PCAP.CD")
+  
+  dfGDP <- 
+    left_join(
+      dfGDP,
+      countrycode::codelist |> select(iso3c, region, region23),
+      join_by(iso3c == iso3c)
+    ) |> mutate(date = as.numeric(date))
+}
+
+```
+
+```{r}
+s <- svgstring(height = 6, width = 12, scaling = 1)
+dfGDP |> na.omit() |>
+  filter(date == 2022) |>
+  arrange(-value) |> head(20) |>
+  mutate(
+    region = case_when( # Reducing number of regions, requires manual check!!!
+      region == "East Asia & Pacific" ~ "Asia",
+      region == "Europe & Central Asia" ~ "Europe",
+      region == "Latin America & Caribbean" ~ "South America",
+      region == "Middle East & North Africa" ~ "Asia",
+      T ~ "North America"
+    )
+  )|>
+  ggplot() +
+  geom_col(aes(
+    y = reorder(country, value),
+    x = value,
+    fill = region,
+  ), show.legend = F) +
+  geom_text(aes(
+    y = reorder(country, value),
+    x = value,
+    label = paste0(round(value/1000), "k")
+  ), hjust = 1, color = "white", fontface = "bold", nudge_x = -1000) +
+  scale_fill_manual(values = c("North America" = "#000000", "Asia" = "#C4AD9D", "South America" = "#0274BD", "Europe" = "#F57251")) +
+  labs(
+    x = "GDP per Capita",
+    y = "",
+    color = "Subregion",
+    caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\nMK"),
+    title = "GDP per Capita (2022)",
+    subtitle = glue::glue(
+      "
+      <span style = 'color: #5d524b; font-size: 17px'><b>▶</b></span> top 20 countries descending <br>
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> world regions highlighted
+      <span style = 'color: #F57251;'><b>Europe</b></span>,
+      <span style = 'color: #C4AD9D;'><b>Asia</b></span>,
+      <span style = 'color: #000000;'><b>North America</b></span>,
+      <span style = 'color: #0274BD;'><b>South America</b></span>.
+      "
+    )
+  ) +
+  theme(
+    plot.subtitle = element_markdown(lineheight = 1.2),
+    panel.grid = element_line(color = "#fff9f5"),
+    panel.grid.major.x = element_line(color = "#ede3dc", linetype = "dashed"),
+    axis.text = element_text(color = "#9b928c"),
+    strip.text = element_text(size = 18, face = "bold")
+  ) +
+  scale_x_continuous(
+    breaks = seq(0, 250000, 50000),
+    labels = paste0(seq(0, 250, 50), "k")
+  )
+htmltools::HTML(s())
+invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "yoy-top20.html")
+```
+
+
+
