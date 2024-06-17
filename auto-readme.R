@@ -25,8 +25,8 @@ lapply(subfolders, function(folder) {
     len <- nchar(file) - 4
     inputFile <- paste0(folder, "/", file)
     outputFile <- paste0(folder, "/", substr(file, 1, len), "png")
-    # convert .html to .png & add embed the link
-    webshot::webshot(inputFile, file = outputFile)
+    # convert .html to .png & embed the link
+    webshot::webshot(inputFile, file = outputFile, selector = ".svglite", zoom = 2)
     md_auto <<- glue::glue(md_auto, "\n ![image](", outputFile, ")")
   })
   md_auto <<- glue::glue(md_auto, "\n")

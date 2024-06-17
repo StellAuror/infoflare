@@ -79,13 +79,13 @@ dfGDP |>
   labs(
     x = "",
     y = "GDP per Capita",
-    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\n MK"),
     title = "Data Overview, world regions breakdown"
   ) 
 
 htmltools::HTML(s())
 invisible(dev.off())
-htmltools::save_html(htmltools::HTML(s()), "data-overview-1.html")
+# htmltools::save_html(htmltools::HTML(s()), "data-overview-1.html")
 ```
 
 ```{r}
@@ -108,13 +108,13 @@ dfGDP |>
   labs(
     x = "",
     y = "GDP per Capita",
-    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\n MK"),
     title = "Data Overview, world regions breakdown over years"
   ) 
 
 htmltools::HTML(s())
 invisible(dev.off())
-htmltools::save_html(htmltools::HTML(s()), "data-overview-2.html")
+# htmltools::save_html(htmltools::HTML(s()), "data-overview-2.html")
 ```
 
 ## Checking if data is continoues
@@ -139,14 +139,14 @@ dfGDP |>
   labs(
     x = "Years",
     y = "",
-    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\n MK"),
     title = "Is data continouse?"
   ) +
   theme(plot.subtitle = element_markdown())
 
 htmltools::HTML(s())
 invisible(dev.off())
-htmltools::save_html(htmltools::HTML(s()), "check-1.html")
+# htmltools::save_html(htmltools::HTML(s()), "check-1.html")
 ```
 
 ## GDP Per Capita
@@ -175,7 +175,7 @@ dfGDP |>
   labs(
     x = "",
     y = "GDP per Capita",
-    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\n MK"),
     title = "European GDP per Capita  (1960-2022)",
     subtitle = glue::glue("
       <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> divided by 4 european subregions \n
@@ -244,7 +244,7 @@ dfGDP |>
     y = "GDP per Capita",
     color = "Subregion",
     title = "GDP per Capita YoY growth (1960-2022)",
-   caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\nMK"),
     subtitle = glue::glue(
       "
       <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> each dot represents country in a given year <br>
@@ -311,6 +311,7 @@ dfGDP |>
     x = "",
     y = "GDP per Capita",
     color = "Subregion",
+    caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\nMK"),
     title = "GDP per Capita YoY growth (1960-2022)",
     subtitle = glue::glue(
       "
@@ -375,7 +376,7 @@ leadinCountries <-
 ```
 
 ```{r}
-s <- svgstring(height = 8, width = 9, scaling = 1)
+s <- svgstring(height = 6, width = 12, scaling = 1)
 dfGDP |> 
   mutate(date = as.numeric(date)) |>
   filter(
@@ -396,7 +397,7 @@ dfGDP |>
     y = n,
     fill = reorder(isGrowing, desc(isGrowing))
   )) +
-  geom_col(show.legend = F) +
+  geom_col(show.legend = F, width = .5) +
   scale_fill_manual(values = c("middle" = "#C4AD9D", "top" = "#F57251", "bottom" = "#000000")) +
   geom_text(aes(
     label = n
@@ -405,7 +406,7 @@ dfGDP |>
   labs(
     x = "GDP per Capita YoY",
     y = "",
-    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\n MK"),
     title = "YoY GDP per Capita for European Countries (2022/2021)",
     subtitle = glue::glue(
       "
@@ -419,7 +420,8 @@ dfGDP |>
   ) + 
   theme(
     panel.grid = element_line(color = "#fff9f5"),
-    plot.subtitle = element_markdown(lineheight = 1.1)
+    plot.subtitle = element_markdown(lineheight = 1.1),
+    axis.text.x = element_text(angle = 0)
   )
 
 htmltools::HTML(s())
@@ -474,7 +476,7 @@ dfGDP |>
   labs(
     x = "GDP per Capita YoY",
     y = "",
-    caption =  paste0("World Bank Open Data \n ", "NY.GDP.PCAP.CD \n", Sys.Date(), "\n MK"),
+    caption =  paste0("World Bank Open Data\n", "NY.GDP.PCAP.CD\n", Sys.Date(), "\nMK"),
     title = "YoY GDP per Capita for European Countries (2022/2021)",
     subtitle = glue::glue(
       "
