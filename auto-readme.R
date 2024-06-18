@@ -26,7 +26,25 @@ lapply(subfolders, function(folder) {
     inputFile <- paste0(folder, "/", file)
     outputFile <- paste0(folder, "/", substr(file, 1, len), "png")
     # convert .html to .png & embed the link
-    webshot::webshot(inputFile, file = outputFile, selector = ".svglite", zoom = 2)
+    # attempt to take the first screenshot
+    result <- tryCatch({
+      webshot(inputFile, file = outputFile, selector = ".svglite", zoom = 2)
+      TRUE  
+    }, error = function(e) {
+      message("Screenshot with selector '.svglite' failed.")
+      FALSE 
+    })
+    # If the first attempt failed, try the second one
+    if (!result) {
+      tryCatch({
+        webshot(inputFile, file = outputFile, zoom = 1, delay = 60)
+        message("Screenshot with selector '#htmlwidget_container' succeeded.")
+      }, error = function(e) {
+        message("Screenshot with selector '#htmlwidget_container' also failed.")
+      })
+    } else {
+      message("Screenshot with selector '.svglite' succeeded.")
+    }
     md_auto <<- glue::glue(md_auto, '\n <img src="', outputFile, '">')
   })
   md_auto <<- glue::glue(md_auto, "</details> \n")
