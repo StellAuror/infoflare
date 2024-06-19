@@ -1,0 +1,19 @@
+```{r}
+pacman::p_load(
+  "tidyverse",
+  "fastmap",
+  "xfun",
+  update = T
+)
+
+pacman::p_install_gh(
+  "ropensci/weathercan"
+)
+
+```
+
+```{r}
+coordWRO <- c(51.107883, 17.038538)
+weathercan::stations()
+
+```

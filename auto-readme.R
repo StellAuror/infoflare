@@ -15,10 +15,23 @@ md_auto <- "\n ## Gallery \n"
 ### Create .PNGs & the markdown section content
 ## for each sub-folder
 lapply(subfolders, function(folder) {
-  # search .HTMLs
-  htmls <- list.files(folder, pattern = "\\.html")
+  # Firstly find and manage the easy part
+  otherGraphs <- c(
+    list.files(folder, pattern = "\\.png"),
+    list.files(folder, pattern = "\\.jpeg"),
+    list.files(folder, pattern = "\\.jpg")
+  )
   # initialize markdown subsection
   md_auto <<- glue::glue(md_auto, "\n <details><summary>", folder, "</summary>")
+  
+  ## for each graphical file
+  lapply(otherGraphs, function(file) {
+    inputFile <- paste0(folder, "/", file)
+    md_auto <<- glue::glue(md_auto, '\n <img src="', inputFile, '">')
+  })
+  
+  # search .HTMLs 
+  htmls <- list.files(folder, pattern = "\\.html")
   ## for each html file
   lapply(htmls, function(file) {
     # defining constants for the file
@@ -34,17 +47,9 @@ lapply(subfolders, function(folder) {
       message("Screenshot with selector '.svglite' failed.")
       FALSE 
     })
-    # If the first attempt failed, try the second one
-    if (!result) {
-      tryCatch({
-        webshot(inputFile, file = outputFile, zoom = 1, delay = 60)
-        message("Screenshot with selector '#htmlwidget_container' succeeded.")
-      }, error = function(e) {
-        message("Screenshot with selector '#htmlwidget_container' also failed.")
-      })
-    } else {
+    if (result) {
       message("Screenshot with selector '.svglite' succeeded.")
-    }
+    } 
     md_auto <<- glue::glue(md_auto, '\n <img src="', outputFile, '">')
   })
   md_auto <<- glue::glue(md_auto, "</details> \n")
