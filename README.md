@@ -24,3 +24,5 @@ Folders are named by the creation (or the latest modification) date. Each folder
  <img src="2024-06-17/yoy-top20.png"></details> 
  <details><summary>2024-06-18</summary>
  <img src="2024-06-18/map.jpeg"></details> 
+ <details><summary>2024-06-19</summary>
+ <img src="2024-06-19/wroclav_temp.png"></details> 
