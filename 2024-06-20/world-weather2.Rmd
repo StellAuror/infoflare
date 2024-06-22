@@ -2,7 +2,8 @@
 pacman::p_load(
   "tidyverse",
   "openmeteo",
-  "ggtext"
+  "ggtext",
+  "r2country"
 )
 
 
@@ -24,18 +25,62 @@ theme_update(
     axis.title.x = element_text(vjust = -0.75)
 )
 ```
+```{r}
+dfCCC <- r2country::capitalOf |> as.data.frame() |>
+  pivot_longer(cols = everything(), names_to = "country", values_to = "city") |>
+  filter(
+    country %in% (
+      r2country::continentOf |>
+      as.data.frame() |>
+      pivot_longer(cols = everything(), names_to = "country", values_to = "continent") |>
+      filter(continent == "Europe") |>
+      pull("country")
+    )
+  )
+
+dfCCC <- dfCCC |>
+  filter(
+    !(country %in% c(
+      "faeroe.islands", "belarus", "andorra", "san.marino", "montenegro",
+      "isle.of.man", "liechtenstein", "luxembourg", "gibraltar"
+    ))
+  )
+```
 
 
 ```{r}
-locStation <- 
-  openmeteo::geocode("Wrocław")$name
-dfWeather <- openmeteo::weather_history(
-  location = locStation, 
-  start = "1970-01-01",
-  end = "2023-12-31",
-  hourly = "temperature_2m"
-)
+dfWeatherEU <- 
+  lapply(dfCCC$city ,function(city) {
+    location <- try(openmeteo::geocode("ASDDSA")$name)
+    if (class(location) == "try-error") return(NA)
+    df <- 
+      openmeteo::weather_history(
+        location = location,
+        start = "1970-01-01",
+        end = "2023-12-31",
+        hourly = "temperature_2m"
+      )
+    df$city <- location
+    df$country <- pull(dfCCC |> filter(city == location), "country")[1]
+  }) |> do.call(rbind, args = _)
+
+
+if (!file.exists("2024-06-20/dfWeatherEU.csv")) {
+  dfWeatherEU <-
+    dfCCC$city |>
+    map_df(~getCityData(.))
+
+  write_csv(dfWeatherEU, "2024-06-20/dfWeatherEU.csv")
+}
+
+lapply(1:4, function(x) {
+  if (x == 1) return(NA)
+  return(iris)
+}) |> do.call(rbind, args = _)
+
 ```
+
+
 ```{r}
 s <- svglite::svgstring(width = 24, height = 6, scaling = 1)
 dfWeather |>
@@ -88,5 +133,9 @@ dfWeather |>
 htmltools::HTML(s())
 invisible(dev.off())
 htmltools::save_html(htmltools::HTML(s()), "wroclav_temp.html")
+```
+
+```{r}
+
 ```
 

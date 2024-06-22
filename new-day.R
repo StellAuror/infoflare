@@ -1,5 +1,5 @@
 ### parameters
-title <- "world-weather"
+title <- "world-weather2"
 createRMD <- TRUE
 createQMD <- FALSE
 createR <- FALSE

@@ -1,0 +1,180 @@
+```{r}
+pacman::p_load(
+  "tidyverse",
+  "ggtext",
+  "worldfootballR",
+  "svglite"
+)
+```
+
+```{r}
+theme_set(theme_minimal())
+theme_update(
+    panel.grid.minor = element_line(size = 0.25),
+    panel.grid.major = element_line(size = 0.75),
+    plot.title = element_text(face = "bold", size = 22),
+    plot.subtitle = element_text(size = 16),
+    text = element_text(color = "#5d524b", family = "Segoe UI", size = 18),
+    panel.background = element_rect(fill = '#fff9f5', color = '#fff9f5'),
+    plot.background = element_rect(fill = '#fff9f5', color = '#fff9f5'),
+    panel.grid = element_line(color = "#f3ede9"),
+    axis.text.x = element_text(color = "#9b928c"),
+    axis.title = element_text(face = "bold", size = 15),
+    axis.title.y = element_text(vjust = +2),
+    axis.title.x = element_text(vjust = -0.75)
+)
+```
+
+```{r}
+url <- "https://raw.githubusercontent.com/martj42/international_results/master/results.csv"
+dfMatch <- read.csv(url) |>
+  mutate(
+    date = as.Date(date, foramt = "%Y-%m-%d") 
+  )
+```
+
+
+```{r}
+s <- svgstring(scaling = 1, width = 12, height = 8)
+
+lfCountry <- "France"
+temp <- 
+  dfMatch |>
+  filter(home_team == lfCountry | away_team == lfCountry) |>
+  mutate(
+    team = lfCountry,
+    oponent = if_else(team == home_team, away_team, home_team),
+    result = home_score - away_score,
+    result = case_when(
+      result == 0 ~ "draw",
+      result < 0 ~ "loss",
+      T ~ "win"
+    ),
+    m = month(date),
+    y = year(date),
+    d = day(date)
+  ) |>
+  group_by(oponent, result) |>
+  summarise(n = n()) |>
+  mutate(totaln = sum(n)) |>
+  filter(totaln >= 10) |>
+  pivot_wider(names_from = "result", values_from = "n") |>
+  rename(
+    "R" = draw,
+    "P" = loss,
+    "W" = win
+  ) |>
+  mutate(position = max(W, R, P))
+
+temp |>
+  ggplot(aes(y = reorder(oponent, (W - P)))) +
+  geom_segment(aes(
+    x = W,
+    xend = P,
+    yend = reorder(oponent, (W - P))
+  ), color = "#dfdfdf", linewidth = 3) +
+  geom_point(aes(x = W), color = "#F57251", size = 5.5) +
+  geom_point(aes(x = R), color = "#000000", shape = 4, size = 5) +
+  geom_point(aes(x = P), color = "#0274BD", size = 5.5) + 
+  geom_text(aes(
+    label = paste0(W, "/", P, "/", R),
+    x = position + 2
+  ), color = "#5d524b") +
+  theme(
+    plot.subtitle = element_markdown()
+  ) + 
+  labs(
+    x = "Number of matches",
+    y = "",
+    title = "Who should we fear? The historical context.",
+    subtitle = glue::glue(
+      "
+      Poland Team opponents by matches 
+      <span style = 'color: #F57251;'><b>won</b></span> /
+      <span style = 'color: #0274BD;'><b>lost</b></span> /
+      <span style = 'color: #000000;'><b>draw</b></span>.
+      "
+    ),
+    caption = paste0("Author: MK \n data source: martj42/international_results (", Sys.Date(), ") \n men's national football team")
+  )
+
+htmltools::HTML(s())
+invisible(dev.off())
+```
+
+```{r}
+s <- svgstring(scaling = 1, width = 14, height = 8)
+temp <- 
+  dfMatch |>
+  filter(
+    home_team == lfCountry | away_team == lfCountry,
+    year(date) %in% 2010:2024
+  ) |>
+  mutate(
+    team = lfCountry,
+    oponent = if_else(team == home_team, away_team, home_team),
+    result = home_score - away_score,
+    result = case_when(
+      result == 0 ~ "draw",
+      result < 0 ~ "loss",
+      T ~ "win"
+    ),
+    m = month(date),
+    y = year(date),
+    d = day(date)
+  ) |>
+  group_by(oponent, result) |>
+  summarise(n = n()) |>
+  mutate(totaln = sum(n)) |>
+  filter(totaln >= 3) |>
+  pivot_wider(names_from = "result", values_from = "n") |>
+  rename(
+    "R" = draw,
+    "P" = loss,
+    "W" = win
+  ) |>
+  mutate(
+    position = max(W, R, P, na.rm = T),
+    across(where(is.numeric), ~if_else(is.na(.x), 0, .x))
+  )
+
+temp |>
+  ggplot(aes(y = reorder(oponent, (W - P)))) +
+  geom_segment(aes(
+    x = W,
+    xend = P,
+    yend = reorder(oponent, (W - P))
+  ), color = "#dfdfdf", linewidth = 4) +
+  geom_point(aes(x = W), color = "#0274BD", size = 6) +
+  geom_point(aes(x = P), color = "#F57251", size = 6) + 
+  geom_point(aes(x = R), color = "#000000", shape = 4, size = 5.5) +
+  geom_text(aes(
+    label = paste0(W, "/", P, "/", R),
+    x = position + .2
+  ), color = "#5d524b", size = 4.2, fontface = "bold") +
+  theme(
+    plot.subtitle = element_markdown()
+  ) + 
+  labs(
+    x = "Number of matches",
+    y = "",
+    title = "Performance of the French National Team Against International Opponents",
+    subtitle = glue::glue(
+      "
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> Matches played since 2010 <br>
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> Match outcomes of the French team by 
+      <span style = 'color: #0274BD;'><b>won</b></span> /
+      <span style = 'color: #F57251;'><b>lost</b></span> /
+      <span style = 'color: #000000;'><b>draw</b></span>.
+      "
+    ),
+    caption = paste0("Author: MK \n data source: martj42/international_results \n men's international matches (", Sys.Date(), ")")
+  )
+htmltools::HTML(s())
+invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "frence.html")
+```
+
+
+
+
