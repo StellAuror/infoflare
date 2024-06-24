@@ -22,3 +22,4 @@ create_file <- function(extension, condition) {
 create_file(".Rmd", createRMD)
 create_file(".Qmd", createQMD)
 create_file(".R", createR)
+

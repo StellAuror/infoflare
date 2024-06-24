@@ -14,19 +14,12 @@ Folders are named by the creation (or the latest modification) date. Each folder
  <img src="2024-06-16/subregions-countries-highlight-2.png">
  <img src="2024-06-16/yoy-subregion-1.png">
  <img src="2024-06-16/yoy-subregion-2.png">
- <img src="2024-06-16/subregion-1.png">
- <img src="2024-06-16/subregion-highlight-1.png">
- <img src="2024-06-16/subregions-countries-highlight-2.png">
- <img src="2024-06-16/yoy-subregion-1.png">
- <img src="2024-06-16/yoy-subregion-2.png"></details> 
  <details><summary>2024-06-17</summary>
  <img src="2024-06-17/yoy-top20.png">
- <img src="2024-06-17/yoy-top20.png"></details> 
  <details><summary>2024-06-18</summary>
- <img src="2024-06-18/map.jpeg"></details> 
+ <img src="2024-06-18/map.jpeg">
  <details><summary>2024-06-19</summary>
  <img src="2024-06-19/wroclav_temp.png">
- <img src="2024-06-19/wroclav_temp.png"></details> 
- <details><summary>2024-06-20</summary></details> 
  <details><summary>2024-06-22</summary>
- <img src="2024-06-22/frence.png"></details> 
+ <img src="2024-06-22/frence.png">
+ <details><summary>2024-06-24</summary>

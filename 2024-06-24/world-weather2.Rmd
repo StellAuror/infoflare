@@ -1,0 +1,177 @@
+
+```{r}
+source("../main.R")
+```
+
+```{r}
+dfCCC <- r2country::capitalOf |> as.data.frame() |>
+  pivot_longer(cols = everything(), names_to = "country", values_to = "city") |>
+  filter(
+    country %in% (
+      r2country::continentOf |>
+      as.data.frame() |>
+      pivot_longer(cols = everything(), names_to = "country", values_to = "continent") |>
+      filter(continent == "Europe") |>
+      pull("country")
+    )
+  )
+
+dfCCC <- dfCCC |>
+  filter(
+    !(country %in% c(
+      "faeroe.islands", "belarus", "andorra", "san.marino", "montenegro",
+      "isle.of.man", "liechtenstein", "luxembourg", "gibraltar"
+    ))
+  )
+```
+
+
+```{r}
+
+if (!file.exists("dfWeatherEU.csv")) {
+  dfWeatherEU <- 
+  lapply(dfCCC$city, function(city) {
+    # Get city location, if not found then NA
+    location <- try(openmeteo::geocode(city)$name)
+    if (class(location)[1] == "try-error") return(NA)
+    
+    # Get data, if not found then NA
+    df <- try(openmeteo::weather_history(
+      location = location,
+      start = "1970-01-01",
+      end = "2023-12-31",
+      hourly = "temperature_2m"
+    ))
+    if (class(df)[1] == "try-error") return(NA)
+    
+    # Add city & country to dataframe
+    df$city <- location
+    df$country <- dplyr::pull(dplyr::filter(dfCCC, city == location), "country")[1]
+    return(df)
+  }) |>
+  # bind the returned list
+  do.call(rbind, args = _) |> as_tibble()
+  
+  write_csv(dfWeatherEU, "dfWeatherEU.csv")
+} else {
+  dfWeatherEU <- 
+    read_csv("dfWeatherEU.csv")
+}
+
+```
+
+
+```{r}
+dfWeatherEU |>
+  mutate(
+    d = day(datetime),
+    w = week(datetime),
+    m = month(datetime),
+    y = year(datetime)
+  ) |>
+  group_by(y, m) |>
+  summarise(temp = round(mean(hourly_temperature_2m, na.rm = T), 1)) |>
+  ungroup() |> group_by(m) |>
+  mutate(
+    avg = temp - mean(temp),
+    status = if_else(avg >= 0, "hotter", "colder")
+  ) |>
+  na.omit() |>
+  ggplot(aes(
+    y = factor(m),
+    x = y
+  )) +
+  geom_tile(aes(fill = status)) +
+  geom_text(aes(
+    label = round(avg, 1)
+  ), color = "white") +
+  scale_fill_manual(values = c("#0c2340", "#c8102e")) +
+  scale_x_continuous(
+    breaks = seq(1970, 2023, 1),
+    expand = c(0, 0)
+  ) +
+  theme(
+    plot.subtitle = element_markdown(),
+    legend.position = "top",
+    legend.text = element_text(size = 14, face = "bold")
+  )
+```
+
+
+```{r}
+dfWeatherEU |>
+  filter(between(year(datetime), 1970, 2023)) |>
+  mutate(
+    d = day(datetime),
+    w = week(datetime),
+    m = month(datetime),
+    y = year(datetime)
+  ) |>
+  group_by(y) |>
+  summarise(temp = round(mean(hourly_temperature_2m, na.rm = T), 1)) |>
+  ungroup() |>
+  mutate(
+    avg = temp - mean(temp, na.rm = T),
+    status = if_else(avg >= 0, "hotter", "colder")
+  ) |>
+  na.omit() |>
+  ggplot(aes(
+    y = avg,
+    x = y
+  )) +
+  geom_col(aes(fill = status)) +
+  geom_text(aes(
+    label = round(avg, 1),
+    y = .15 * (avg / abs(avg)) + avg,
+    color = status
+  )) +
+  scale_fill_manual(values = c("#0c2340", "#c8102e")) +
+  scale_color_manual(values = c("#0c2340", "#c8102e")) +
+  scale_x_continuous(
+    breaks = seq(1970, 2023, 1),
+    expand = c(0, 0)
+  ) +
+  theme(
+    plot.subtitle = element_markdown(),
+    legend.position = "top",
+    legend.text = element_text(size = 14, face = "bold")
+  )
+```
+
+```{r}
+dfWeatherEU |>
+  filter(between(year(datetime), 1970, 2023)) |>
+  mutate(
+    d = day(datetime),
+    w = week(datetime),
+    m = month(datetime),
+    y = year(datetime)
+  ) |>
+  group_by(m) |>
+  summarise(temp = round(mean(hourly_temperature_2m, na.rm = T), 1)) |>
+  ungroup() |>
+  mutate(
+    avg = temp - mean(temp, na.rm = T),
+    status = if_else(avg >= 0, "hotter", "colder")
+  ) |>
+  na.omit() |>
+  ggplot(aes(
+    x = avg,
+    y = factor(m)
+  )) +
+  geom_col(aes(fill = status)) +
+  geom_text(aes(
+    label = round(avg, 1),
+    x = .55 * (avg / abs(avg)) + avg,
+    color = status
+  )) +
+  scale_fill_manual(values = c("#0c2340", "#c8102e")) +
+  scale_color_manual(values = c("#0c2340", "#c8102e")) +
+  theme(
+    plot.subtitle = element_markdown(),
+    legend.position = "top",
+    legend.text = element_text(size = 14, face = "bold")
+  )
+```
+
+

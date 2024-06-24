@@ -86,20 +86,21 @@ temp |>
   labs(
     x = "Number of matches",
     y = "",
-    title = "Who should we fear? The historical context.",
+    title = "Performance of the French National Team Against International Opponents",
     subtitle = glue::glue(
       "
-      Poland Team opponents by matches 
-      <span style = 'color: #F57251;'><b>won</b></span> /
-      <span style = 'color: #0274BD;'><b>lost</b></span> /
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> Matches played since 2000 <br>
+      <span style = 'color: #5d524b; font-size: 17px;'><b>▶</b></span> Match outcomes of the French team by 
+      <span style = 'color: #0274BD;'><b>won</b></span> /
+      <span style = 'color: #F57251;'><b>lost</b></span> /
       <span style = 'color: #000000;'><b>draw</b></span>.
       "
     ),
-    caption = paste0("Author: MK \n data source: martj42/international_results (", Sys.Date(), ") \n men's national football team")
+    caption = paste0("Author: MK \n data source: martj42/international_results \n men's international matches (", Sys.Date(), ")")
   )
-
 htmltools::HTML(s())
 invisible(dev.off())
+htmltools::save_html(htmltools::HTML(s()), "frence.html")
 ```
 
 ```{r}

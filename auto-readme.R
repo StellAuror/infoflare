@@ -24,12 +24,6 @@ lapply(subfolders, function(folder) {
   # initialize markdown subsection
   md_auto <<- glue::glue(md_auto, "\n <details><summary>", folder, "</summary>")
   
-  ## for each graphical file
-  lapply(otherGraphs, function(file) {
-    inputFile <- paste0(folder, "/", file)
-    md_auto <<- glue::glue(md_auto, '\n <img src="', inputFile, '">')
-  })
-  
   # search .HTMLs 
   htmls <- list.files(folder, pattern = "\\.html")
   ## for each html file
@@ -38,7 +32,7 @@ lapply(subfolders, function(folder) {
     len <- nchar(file) - 4
     inputFile <- paste0(folder, "/", file)
     outputFile <- paste0(folder, "/", substr(file, 1, len), "png")
-    # convert .html to .png & embed the link
+    # convert .html to .png 
     # attempt to take the first screenshot
     result <- tryCatch({
       webshot(inputFile, file = outputFile, selector = ".svglite", zoom = 2)
@@ -50,9 +44,12 @@ lapply(subfolders, function(folder) {
     if (result) {
       message("Screenshot with selector '.svglite' succeeded.")
     } 
-    md_auto <<- glue::glue(md_auto, '\n <img src="', outputFile, '">')
   })
-  md_auto <<- glue::glue(md_auto, "</details> \n")
+  ## for each graphical file
+  lapply(otherGraphs, function(file) {
+    inputFile <- paste0(folder, "/", file)
+    md_auto <<- glue::glue(md_auto, '\n <img src="', inputFile, '">')
+  })
 })
 
 ### load the README constant
