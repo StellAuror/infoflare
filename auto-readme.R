@@ -50,6 +50,7 @@ lapply(subfolders, function(folder) {
     inputFile <- paste0(folder, "/", file)
     md_auto <<- glue::glue(md_auto, '\n <img src="', inputFile, '">')
   })
+  md_auto <<- glue::glue(md_auto, "\n </details>")
 })
 
 ### load the README constant
