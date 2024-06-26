@@ -62,116 +62,228 @@ if (!file.exists("dfWeatherEU.csv")) {
 
 
 ```{r}
-dfWeatherEU |>
+dfWeatherEU5 <- 
+  dfWeatherEU |>
+  filter(between(year(datetime), 1970, 2023)) |>
   mutate(
     d = day(datetime),
     w = week(datetime),
     m = month(datetime),
     y = year(datetime)
-  ) |>
+  ) 
+  
+```
+
+
+
+```{r}
+monthsFactor <- c(
+  "Jan" = 1,
+  "Feb" = 2,
+  "Mar" = 3,
+  "Apr" = 4,
+  "May" = 5,
+  "Jun" = 6,
+  "Jul" = 7,
+  "Aug" = 8,
+  "Sep" = 9,
+  "Oct" = 10,
+  "Nov" = 11,
+  "Dec" = 12
+)
+
+(
+  p1 <- dfWeatherEU5 |>
   group_by(y, m) |>
-  summarise(temp = round(mean(hourly_temperature_2m, na.rm = T), 1)) |>
+  summarise(avg = round(mean(hourly_temperature_2m, na.rm = T), 1)) |>
   ungroup() |> group_by(m) |>
   mutate(
-    avg = temp - mean(temp),
-    status = if_else(avg >= 0, "hotter", "colder")
+    avgDiff = avg - mean(avg),
+    status = case_when(
+      avgDiff >= 0 ~ "#c8102e",
+      T ~ "#408ac2"
+    )
   ) |>
   na.omit() |>
   ggplot(aes(
-    y = factor(m),
+    y = factor(m, labels = names(monthsFactor), ordered = T),
     x = y
   )) +
-  geom_tile(aes(fill = status)) +
+  geom_tile(aes(fill = status, colors = status), show.legend = F) +
   geom_text(aes(
-    label = round(avg, 1)
-  ), color = "white") +
-  scale_fill_manual(values = c("#0c2340", "#c8102e")) +
+    label = round(avgDiff, 1)
+  ), color = "white", show.legend = F) +
   scale_x_continuous(
-    breaks = seq(1970, 2023, 1),
+    breaks = seq(1970, 2023, 5),
     expand = c(0, 0)
   ) +
+  scale_fill_identity() +
   theme(
     plot.subtitle = element_markdown(),
     legend.position = "top",
     legend.text = element_text(size = 14, face = "bold")
-  )
+  ) +
+  labs(
+    x = "",
+    y = ""
+  )  
+)
 ```
 
 
 ```{r}
-dfWeatherEU |>
-  filter(between(year(datetime), 1970, 2023)) |>
-  mutate(
-    d = day(datetime),
-    w = week(datetime),
-    m = month(datetime),
-    y = year(datetime)
-  ) |>
+(
+  p2 <- dfWeatherEU5 |>
   group_by(y) |>
-  summarise(temp = round(mean(hourly_temperature_2m, na.rm = T), 1)) |>
+  summarise(avg = round(mean(hourly_temperature_2m, na.rm = T), 1)) |>
   ungroup() |>
   mutate(
-    avg = temp - mean(temp, na.rm = T),
-    status = if_else(avg >= 0, "hotter", "colder")
+    avgDiff = avg - mean(avg, na.rm = T),
+    status = if_else(avgDiff >= 0, "hotter", "colder")
   ) |>
-  na.omit() |>
   ggplot(aes(
-    y = avg,
+    y = avgDiff,
     x = y
   )) +
-  geom_col(aes(fill = status)) +
+  geom_col(aes(fill = status), show.legend = F) +
   geom_text(aes(
-    label = round(avg, 1),
-    y = .15 * (avg / abs(avg)) + avg,
+    label = round(avgDiff, 1),
+    y = .15 * (avgDiff / abs(avgDiff)) + avgDiff,
     color = status
-  )) +
-  scale_fill_manual(values = c("#0c2340", "#c8102e")) +
-  scale_color_manual(values = c("#0c2340", "#c8102e")) +
+  ), show.legend = F) +
   scale_x_continuous(
-    breaks = seq(1970, 2023, 1),
+    breaks = seq(1970, 2023, 5),
     expand = c(0, 0)
   ) +
+  scale_fill_manual(values = c("#408ac2", "#c8102e")) +
+  scale_color_manual(values = c("#408ac2", "#c8102e")) +
   theme(
+    subtitle = element_markdown(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
     plot.subtitle = element_markdown(),
     legend.position = "top",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
     legend.text = element_text(size = 14, face = "bold")
-  )
+  ) + labs(
+    x = "", y = "",
+    title = "Deviation from the avg. temperature",
+    subtitle = "measured 2m above the ground in capitols of 35 EU countries since 1970"
+  ) 
+)
 ```
 
 ```{r}
-dfWeatherEU |>
-  filter(between(year(datetime), 1970, 2023)) |>
-  mutate(
-    d = day(datetime),
-    w = week(datetime),
-    m = month(datetime),
-    y = year(datetime)
-  ) |>
+(
+  p3 <-
+  dfWeatherEU5 |>
+  group_by(m, y) |>
+  summarise(avg = round(mean(hourly_temperature_2m, na.rm = T), 3)) |>
   group_by(m) |>
-  summarise(temp = round(mean(hourly_temperature_2m, na.rm = T), 1)) |>
-  ungroup() |>
-  mutate(
-    avg = temp - mean(temp, na.rm = T),
+  summarise(
+    avg = mean(avg, na.rm = T),
     status = if_else(avg >= 0, "hotter", "colder")
   ) |>
-  na.omit() |>
   ggplot(aes(
     x = avg,
     y = factor(m)
   )) +
-  geom_col(aes(fill = status)) +
+  geom_col(aes(fill = status), show.legend = F) +
   geom_text(aes(
-    label = round(avg, 1),
-    x = .55 * (avg / abs(avg)) + avg,
+    label = round(avg, 2),
     color = status
-  )) +
-  scale_fill_manual(values = c("#0c2340", "#c8102e")) +
-  scale_color_manual(values = c("#0c2340", "#c8102e")) +
+  ), show.legend = F, nudge_x = 1) +
+  scale_fill_manual(values = c("#acacac")) +
+  scale_color_manual(values = c("#515151")) +
   theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
     plot.subtitle = element_markdown(),
-    legend.position = "top",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
     legend.text = element_text(size = 14, face = "bold")
-  )
+  ) + labs(
+    x = "", y = "",
+    subtitle = "average tmeperature in a given month",
+    caption =  paste0("Open Meteo Data\n", "temperature_2m\n", Sys.Date(), "\n MK")
+  ) 
+)
 ```
 
+```{r}
+layout <- "
+AAAA#
+CCCCB
+"
+
+(
+  p2 + 
+  p3 +
+  p1 +
+  plot_layout(design = layout) 
+) |>
+asSVG(32, 13, scaling = 1.5, save = T, name = "AvgTempEU.html")
+```
+
+```{r}
+dfWeatherEUYoY <- 
+  dfWeatherEU |>
+  group_by(y) |>
+  summarise(avg = mean(hourly_temperature_2m)) |>
+  mutate(
+    date = as.Date(paste(y, 1, 1, sep = "-"), format = "%Y-%m-%d"),
+    bavg = lag(avg),
+    YoY = avg/bavg,   
+    status = if_else((avg - bavg) < 0, "colder", "warmer"),
+    max = if_else(avg >= bavg, avg, bavg)
+  )
+
+model <- lm(avg ~ y, data = dfWeatherEUYoY)$coefficients 
+
+
+(
+ dfWeatherEUYoY |>
+    ggplot(aes(
+      x = y,
+      y = avg
+    )) +
+    stat_smooth(se = F, method = "lm", color = "#1f1f1f", ) +
+    geom_segment(aes(
+      xend = y,
+      yend = bavg,
+      color = (status),
+      group = 1
+    ), linewidth = 5, show.legend = F) +
+    scale_color_manual(values = c("colder" = "#408ac2", "warmer" = "#c8102e")) +
+    geom_text(aes(
+      y = max,
+      label = paste0(round(YoY * 100, 0) - 100, "%")
+    ), nudge_y = .1) +
+    scale_y_continuous(
+      breaks = seq(10, 12, 1),
+      minor_breaks = seq(9.5, 12.5, .1)
+    ) + 
+    annotate(geom = "text", x = 2020, y = 11, label = paste0("Avg. temp. growth each 25y: ", round(model[2] * 25, 2), "°C"), size = 5) +
+    labs(
+      x = "Year",
+      y = "Average temperature (°C)", 
+      title = "Change of average temperature in Europe",
+      subtitle = glue::glue(
+          "
+          <span style = 'color: #5d524b; font-size: 14px;'><b>▶</b></span> between 1970 & 2023 <br>
+          <span style = 'color: #408ac2; font-size: 24px;'><b>colder</b></span> 
+          <span style = 'color: #c8102e; font-size: 24px;'><b>warmer</b></span>
+          "
+        ),
+      caption =  paste0("Open Meteo Data\n", "temperature_2m\n", Sys.Date(), "\n MK")
+    ) +
+    theme(
+      plot.subtitle = element_markdown()
+    )
+) |>
+  asSVG(18, 6, save = T, name = "AvgTempEUchange.html")
+  
+  
+```
 

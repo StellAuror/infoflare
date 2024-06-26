@@ -19,7 +19,10 @@ pacman::p_load(
   # color palette
   "paletteer",
   # Side by side polots
-  "patchwork"
+  "patchwork",
+  # OMG
+  "ggforce",
+  "gghighlight"
 )
 
 
@@ -39,18 +42,15 @@ theme_update(
   axis.title.y = element_text(vjust = +2),
   axis.title.x = element_text(vjust = -0.75)
 )
-ggplot_color <- scale_colour_paletteer_d("nbapalettes::wizards_earned")
-ggplot_fill <- scale_fill_paletteer_d("nbapalettes::wizards_earned")
+ggplot_color <- scale_color_manual(values = c("#0274BD", "#C4AD9D", "#000000", "#F57251"))
+ggplot_fill <- scale_fill_manual(values = c("#0274BD", "#C4AD9D", "#000000", "#F57251"))
 
 
-asSVG <- function(chart, width = 16, height = 9, scaling = 1) {
+asSVG <- function(chart, width = 16, height = 9, scaling = 1, save = F, name = "") {
   s <- svgstring(width, height, scaling = scaling)  # Start the SVG device
   print(chart)          # Print the ggplot object to the SVG device
   svg_content <- s()    # Capture the SVG content
   invisible(dev.off())  # Close the SVG device
+  if (save) htmltools::save_html(htmltools::HTML(svg_content), name)
   htmltools::HTML(svg_content)  # Return the SVG content as HTML
 }
-
-# Load necessary libraries
-library(ggplot2)
-library(paletteer)

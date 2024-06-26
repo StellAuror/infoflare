@@ -1,0 +1,165 @@
+## Declaration
+```{r}
+source("../main.R")
+```
+## Data
+```{r}
+dfTemp <- read_csv("../2024-06-24/dfWeatherEU.csv")
+```
+## AVG DAYTIME
+```{r}
+dfDayTemp <-
+  dfTemp |>
+  mutate(
+    h = hour(datetime),
+    d = day(datetime),
+    m = month(datetime)
+  ) |>
+  group_by(m, h, d) |>
+  summarise(avg = mean(hourly_temperature_2m)) |>
+  na.omit()
+
+monthNames <- c(
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+)
+```
+
+```{r}
+(
+  dfDayTemp |>
+    ggplot(aes(
+      x = factor(d, levels = 1:31, ordered = T),
+      y = factor(h, levels = 0:23, ordered = T),
+      fill = avg
+    )) +
+    geom_tile(color = "#fff9f5", linewidth = .2) +
+    scale_fill_gradient2(low = "#408ac2", high = "#c8102e", mid = "yellow", midpoint = 12) +
+    scale_x_discrete(breaks = seq(1, 31, 5)) +
+    scale_y_discrete(breaks = seq(0, 24, 7)) +
+    facet_wrap(~factor(m, levels = 1:12, labels = monthNames)) +
+    theme(
+      axis.text.x = element_text(angle = 0),
+      legend.position = "top",
+      plot.subtitle = element_markdown(),
+      legend.key.width = unit(4, "cm"),
+      legend.text = element_text(size = 12)
+    ) +
+    labs(
+      x = "Day of the Month",
+      fill = "",
+      y = "Hour of the Day", 
+      title = "Temperature change in Europe (1970-2023)",
+      subtitle = glue::glue(
+          "
+          <span style = 'color: #5d524b; font-size: 14px;'><b>▶</b></span> snapshot of an average day over month days<br>
+          <span style = 'color: #5d524b; font-size: 14px;'><b>▶</b></span> middle (yellow) temperature set at 12°C
+          "
+        ),
+      caption =  paste0("Open Meteo Data\n", "temperature_2m\n", Sys.Date(), "\n MK")
+    )
+) |> asSVG()
+```
+
+## Country-wise comparison
+```{r}
+dfCountryRange <- 
+  dfTemp |>
+  group_by(country) |>
+  summarise(
+    Q1 = quantile(hourly_temperature_2m, probs = .25, na.rm = T),
+    Q2 = quantile(hourly_temperature_2m, probs = .5, na.rm = T),
+    Q3 = quantile(hourly_temperature_2m, probs = .75, na.rm = T),
+    avg = mean(hourly_temperature_2m, na.rm = T),
+    min = min(hourly_temperature_2m, na.rm = T),
+    max = max(hourly_temperature_2m, na.rm = T)
+  )
+
+countries <- c("albania", "austria", "belgium", "bosnia.and.herzegovina", "bulgaria", 
+               "croatia", "cyprus", "czech.republic", "denmark", "france", "germany", 
+               "greece", "hungary", "iceland", "ireland", "italy", "kosovo", "latvia", 
+               "lithuania", "malta", "moldova", "netherlands", "north.macedonia", 
+               "norway", "poland", "portugal", "romania", "serbia", "slovakia", 
+               "slovenia")
+
+cshort <- c("albania", "austria", "belgium", "bos&herz", "bulgaria", 
+               "croatia", "cyprus", "czech", "denmark", "france", "germany", 
+               "greece", "hungary", "iceland", "ireland", "italy", "kosovo", "latvia", 
+               "lithuania", "malta", "moldova", "netherlands", "n. mac.", 
+               "norway", "poland", "portugal", "romania", "serbia", "slovakia", 
+               "slovenia")
+
+regions <- c("south", "west", "west", "south", "east", "south", "south", "east", 
+             "north", "west", "west", "south", "east", "north", "west", "south", 
+             "south", "north", "north", "south", "east", "west", "south", "north", 
+             "east", "south", "east", "east", "east", "south")
+
+regionsEU <- data.frame(country = countries, region = regions |> toupper(), cshort = cshort)
+```
+
+
+```{r}
+(
+  dfCountryRange |>
+    na.omit() |>
+    left_join(regionsEU, join_by(country == country)) |>
+    ggplot(aes(y = reorder(country, -Q2))) + 
+    geom_segment(aes(
+      x = Q1, xend = Q3,
+      color = region
+    ), linewidth = 5, show.legend = F) +
+    geom_point(aes(
+      x = avg
+    ), color = "black", size = 3) +
+    geom_point(aes(
+      x = Q2
+    ), color = "white", size = 3) +
+    geom_text(aes(
+      label = cshort,
+      x = Q1
+    ), hjust = 1, nudge_x = -.5) +
+    geom_text(aes(
+      label = paste(round(Q1, 0), round(Q2, 0), round(Q3, 0), sep = "-"),
+      x = Q3
+    ), hjust = 0, nudge_x = .5, color = "#777", size = 3) +
+    facet_wrap(~region, nrow = 1) +
+    gghighlight() +
+    scale_x_continuous(expand = c(0.2, 0)) +
+    scale_color_manual(values = c("#513e38", "#c09e7f", "#894a48", "#423636")) +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_line(linewidth = 1),
+      axis.text.y = element_blank(),
+      plot.subtitle = element_markdown(),
+      strip.background = element_rect(fill = "#9d786c", color = NA),
+      strip.text = element_text(color = "white", face = "bold")
+    ) +
+    labs(
+      x = "",
+      fill = "",
+      y = "", 
+      title = "Average Temperature by EU countries",
+      subtitle = glue::glue(
+          "
+          <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> segment range: q1-q3 (middle temp.), q2 (median) as white marker, average black<br>
+          <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> measured 2m over the ground (1970-2023)<br>
+          <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> breakdown by eu regions<br>
+          "
+        ),
+      caption =  paste0("Open Meteo Data\n", "temperature_2m\n", Sys.Date(), "\n MK")
+    )
+) |>
+  asSVG()
+```
+
+
+
+
+
+
+
+
+
+
+

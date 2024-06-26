@@ -31,3 +31,7 @@ Folders are named by the creation (or the latest modification) date. Each folder
  <img src="2024-06-24/AvgTempEU.png">
  <img src="2024-06-24/AvgTempEUchange.png">
  </details>
+ <details><summary>2024-06-25</summary>
+ <img src="2024-06-25/AvgThroughtYearEU.png">
+ <img src="2024-06-25/TempCountriesEU.png">
+ </details>
