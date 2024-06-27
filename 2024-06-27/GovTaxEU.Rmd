@@ -1,0 +1,249 @@
+```{r}
+source("../main.R")
+```
+
+```{r}
+dfsearch <- eurostat::search_eurostat("tax")
+
+
+data <- 
+  eurostat::get_eurostat("icw_tax_04",
+    type = "label", time_format = "num"
+  )
+
+if (!exists("dfTax", envir = .GlobalEnv)) {
+  dfTax <- 
+    eurostat::get_eurostat("icw_tax_04",
+      type = "label", time_format = "num"
+    )
+}
+```
+
+```{r}
+dfTaxW <- dfTax |> 
+  filter(
+    age %in% c(
+      "Less than 30 years", "From 30 to 39 years", 
+      "From 40 to 49 years"
+    )
+  ) |>
+  pivot_wider(names_from = "quantile", values_from = "values") |>
+  mutate(
+    Q2 = Median,
+    Q1 = `Twenty-fifth percentile`,
+    Q3 = `Seventy-fifth percentile`
+  )
+
+dfTaxW$age <- factor(
+  dfTaxW$age,
+  levels = c(
+      "Less than 30 years", "From 30 to 39 years", 
+      "From 40 to 49 years"
+    ),
+  ordered = T
+)
+```
+
+
+```{r}
+TopVariety <- dfTaxW |> 
+  group_by(geo) |>
+  summarise(range = min(Q1) - max(Q3)) |>
+  arrange(-range) |> head(5) |> pull(geo)
+
+BotVariety <- dfTaxW |> 
+  group_by(geo) |>
+  summarise(range = min(Q1) - max(Q3)) |>
+  arrange(range) |> head(5) |> pull(geo)
+
+(
+  dfTaxW |> 
+  filter(TIME_PERIOD == 2020) |>
+  group_by(geo, age) |>
+  summarise(
+    Q2 = mean(Q2, na.rm = T),
+    Q1 = mean(Q1, na.rm = T),
+    Q3 = mean(Q3, na.rm = T)
+  ) |>
+  ggplot(aes(
+    y = reorder(geo, -Q3)
+  )) +
+  geom_segment(aes(
+    x = Q1, xend = Q3,
+    color = if_else(geo %in% TopVariety, T, F)
+  ), size = 6, color = "#dddddd") +
+  geom_point(aes(
+    x = Q1
+  ), size = 8, color = "#bcbcbc") +
+  geom_point(aes(
+    x = Q2
+  ), size = 5, color = "#fff") +
+  geom_point(aes(
+    x = Q3
+  ), size = 8, color = "#aa6f73") +
+  geom_text(aes(
+    label = paste0(round(Q1, 0), "%"),
+    x = Q1
+  ), nudge_x = -1.6, hjust = 1, color = "#717171", fontface = "bold") +
+ geom_text(aes(
+    label = paste0(round(Q3, 0), "%"),
+    x = Q3
+  ), nudge_x = 1.6, hjust = 0, color = "#764d50", fontface = "bold") +
+  facet_wrap(~age) +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.grid.major.x = element_line(linewidth = 1),
+      plot.subtitle = element_markdown(),
+      strip.background = element_rect(fill = "#9d786c", color = NA),
+      strip.text = element_text(color = "white", face = "bold")
+    ) +
+    labs(
+      x = "",
+      fill = "",
+      y = "", 
+      title = "Direct Taxes Paid by Households as a Percentage of Their Gross Income (2020)",
+      subtitle = glue::glue(
+          "
+          <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> twenty-fifth percentile, fifty percentile (median), seventy-fifth percentile<br>
+          <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> breakdown of age of the reference person<br>
+          <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> by EU countries arranged by ascending seventy-fifth percentile of taxes paid
+          "
+        ),
+      caption =  paste0("Eurostat\n", "icw_tax_04\n", Sys.Date(), "\n MK")
+    )
+) |>
+  asSVG(height = 12, save = T, name = "taxesPaidByAge.html")
+```
+```{r}
+hell4Young <- dfTaxW |> 
+  mutate(age = as.character(age)) |>
+  filter(age == "Less than 30 years", TIME_PERIOD == 2020) |>
+  arrange(-Q2) |> head(4) |> pull("geo")
+
+(
+  dfTaxW |> 
+  mutate(age = as.character(age)) |>
+  filter(age == "Less than 30 years") |>
+  ggplot() +
+  geom_line(aes(
+    x = TIME_PERIOD,
+    y = Q2,
+    color = if_else(geo %in% hell4Young, "#aa6f73", "#ccc"),
+    group = geo
+  ), size = 2) +
+  geom_text(aes(
+    label = paste0(round(Q2, 0), "% ", geo),
+    x = if_else(TIME_PERIOD == 2020 & geo %in% hell4Young, TIME_PERIOD, NA),
+    y = Q2
+  ), hjust = 0, nudge_x = .15, size = 6, color = "#aa6f73", fontface = "bold") +
+  scale_color_identity() +
+  scale_x_continuous(expand = c(0, 3)) +
+  theme(
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    plot.subtitle = element_markdown(),
+    strip.background = element_rect(fill = "#9d786c", color = NA),
+    strip.text = element_text(color = "white", face = "bold")
+  ) +
+  labs(
+    x = "",
+    fill = "",
+    y = "", 
+    title = "Direct Taxes Paid by Young Adults (2020)",
+    subtitle = glue::glue(
+        "
+        <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> as a percentage of their gross income  <br>
+        <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> percentage of the taxes paid counted for a median young adult (less than 30 years) 
+        <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> top 4 the biggest taxes paid by country highlighted 
+        "
+      ),
+    caption =  paste0("Eurostat\n", "icw_tax_04\n", Sys.Date(), "\n MK")
+  )
+) |> asSVG(name = "Hell4YoungEU.html", save = T)
+```
+
+```{r}
+(
+  dfTaxW |>
+  filter(
+    geo %in% hell4Young,
+    TIME_PERIOD == 2020
+  ) |>
+  mutate(fillQ2 = case_when(
+    age == "Less than 30 years" ~ "#aa6f72",
+    age == "From 30 to 39 years" ~ "#aa6f72",
+    T ~ "#aa6f72"
+  ),
+  fillQ1 = case_when(
+      age == "Less than 30 years" ~ "#e8a38a",
+      age == "From 30 to 39 years" ~ "#e8a38a",
+      T ~ "#e8a38a"
+    ),
+  fillQ3 = case_when(
+      age == "Less than 30 years" ~ "#65525c",
+      age == "From 30 to 39 years" ~ "#65525c",
+      T ~ "#65525c"
+    ),
+  age = factor(case_when(
+      age == "Less than 30 years" ~ "Age < 30",
+      age == "From 30 to 39 years" ~ "Age [30 - 40)",
+      T ~ "Age ≥ 40"
+    ), levels = c("Age < 30", "Age [30 - 40)", "Age ≥ 40"))
+  ) |>
+  ggplot() + 
+  scale_fill_identity() +
+  geom_col(aes(
+    y = Q3,
+    x = age,
+    fill = fillQ3
+  ), position = "dodge") +
+  geom_col(aes(
+    y = Q2,
+    x = age,
+    fill = fillQ2
+  ), position = "dodge") +
+  geom_col(aes(
+    y = Q1,
+    x = age,
+    fill = fillQ1
+  ), position = "dodge") +
+  geom_text(aes(
+    x = age,
+    y = Q1/2,
+    label = paste0("Q1: ", round(Q1, 0), "%")
+  ), color = "white", fontface = "bold") +
+  geom_text(aes(
+    x = age,
+    y = ((Q2 - Q1) / 2 + Q1),
+    label = paste0("Q2: ", round(Q2, 0), "%")
+  ), color = "white", fontface = "bold") +
+  geom_text(aes(
+    x = age,
+    y = ((Q3 - Q2) / 2 + Q2),
+    label = paste0("Q3: ", round(Q3, 0), "%")
+  ), color = "white", fontface = "bold") +
+  facet_wrap(~geo) +
+  theme(
+    axis.text.x = element_text(angle = 0),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    plot.subtitle = element_markdown(),
+    strip.background = element_rect(fill = "#9d786c", color = NA),
+    strip.text = element_text(color = "white", face = "bold")
+  ) +
+  labs(
+    x = "",
+    fill = "Quartile",
+    y = "", 
+    title = "Direct Taxes Paid by 1-3 Quantiles of Age Group (2020)",
+    subtitle = glue::glue(
+        "
+        <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> as a percentage of their gross income  <br>
+        <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> top 4 the biggest taxes paid by country highlighted
+        "
+      ),
+    caption =  paste0("Eurostat\n", "icw_tax_04\n", Sys.Date(), "\n MK")
+  )
+) |> asSVG(width = 10, name = "Hell4YoungEUTop4.html", save = T)
+```
+
