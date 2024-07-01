@@ -1,0 +1,54 @@
+```{r}
+source("../main.R")
+```
+
+```{r}
+
+wbstats::wb_search("survey")
+
+if (!exists("dfPregnant", envir = .GlobalEnv)) {
+  dfPregnant <- 
+    wbstats::wb_data(indicator = "HF.STA.ANV4.ZS")
+}
+
+```
+
+```{r}
+(
+  dfPregnant |>
+  left_join(
+    wbstats::wb_countries(),
+    join_by(iso3c == iso3c),
+    suffix = c("", ".y")
+  ) |>
+  select(-contains(".y")) |>
+  group_by(country, region) |>
+  summarise(value = max(value)) |>
+  ggplot(aes(
+    x = value,
+    y = country
+  )) +
+  ggrepel::geom_text_repel(aes(
+    label = country,
+    color = region
+  ), show.legend = F, fontface = "bold") +
+  geom_point(aes(
+    color = region
+  ), show.legend = F) +
+  facet_wrap(~region, scales = "free_y") +
+  gghighlight() +
+  labs(
+    title = "Pregnant women receiving prenatal care of at least four visits (% of pregnant women)",
+    x = "% of pregnant women",
+    y = "",
+    caption =  paste0("World Bank Open Data\n", "HF.STA.ANV4.ZS\n", Sys.Date(), "\n MK"),
+  ) +
+    scale_color_manual(values = c("#0274BD", "#9d786c", "#000000", "#F57251", "#43aa8b", "#264653")) + 
+  theme(
+    axis.text.y = element_blank(),
+      strip.background = element_rect(fill = "#9d786c", color = NA),
+      strip.text = element_text(color = "white", face = "bold")
+  )
+) |> asSVG(width = 24, height = 12, save = T, name = "PregnantWmn.html")
+```
+

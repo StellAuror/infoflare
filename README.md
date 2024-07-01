@@ -25,7 +25,7 @@ Folders are named by the creation (or the latest modification) date. Each folder
  <img src="2024-06-19/wroclav_temp.png">
  </details>
  <details><summary>2024-06-22</summary>
- <img src="2024-06-22/frence.png">
+ <img src="2024-06-22/france.png">
  </details>
  <details><summary>2024-06-24</summary>
  <img src="2024-06-24/AvgTempEU.png">
@@ -36,5 +36,9 @@ Folders are named by the creation (or the latest modification) date. Each folder
  <img src="2024-06-25/TempCountriesEU.png">
  </details>
  <details><summary>2024-06-27</summary>
+ <img src="2024-06-27/Hell4YoungEU.png">
+ <img src="2024-06-27/Hell4YoungEUTop4.png">
  <img src="2024-06-27/taxesPaidByAge.png">
+ </details>
+ <details><summary>2024-07-01</summary>
  </details>

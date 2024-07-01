@@ -6,11 +6,6 @@ source("../main.R")
 dfsearch <- eurostat::search_eurostat("tax")
 
 
-data <- 
-  eurostat::get_eurostat("icw_tax_04",
-    type = "label", time_format = "num"
-  )
-
 if (!exists("dfTax", envir = .GlobalEnv)) {
   dfTax <- 
     eurostat::get_eurostat("icw_tax_04",
