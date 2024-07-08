@@ -39,16 +39,23 @@ if (!exists("dfPregnant", envir = .GlobalEnv)) {
   gghighlight() +
   labs(
     title = "Pregnant women receiving prenatal care of at least four visits (% of pregnant women)",
+    subtitle = glue::glue(
+          "
+          <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> the highest result collected between 1996-2017, depending on data availability  
+          "
+        ),
     x = "% of pregnant women",
     y = "",
     caption =  paste0("World Bank Open Data\n", "HF.STA.ANV4.ZS\n", Sys.Date(), "\n MK"),
   ) +
     scale_color_manual(values = c("#0274BD", "#9d786c", "#000000", "#F57251", "#43aa8b", "#264653")) + 
   theme(
+    plot.subtitle = element_markdown(),
     axis.text.y = element_blank(),
       strip.background = element_rect(fill = "#9d786c", color = NA),
       strip.text = element_text(color = "white", face = "bold")
   )
 ) |> asSVG(width = 24, height = 12, save = T, name = "PregnantWmn.html")
+
 ```
 

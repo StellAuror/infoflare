@@ -1,5 +1,5 @@
 ### parameters
-title <- "idkyet"
+title <- "UKR-RUS"
 createRMD <- TRUE
 createQMD <- FALSE
 createR <- FALSE
