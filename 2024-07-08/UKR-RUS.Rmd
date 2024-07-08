@@ -1,0 +1,145 @@
+```{r}
+source("../main.R")
+```
+
+```{r}
+pacman::p_load(
+  "tidyverse",
+  "jsonlite",
+  "httr"
+)
+```
+
+
+```{r}
+# Define the URL of the JSON file
+url <- c(
+  "https://raw.githubusercontent.com/PetroIvaniuk/2022-Ukraine-Russia-War-Dataset/main/data/russia_losses_personnel.json",
+  "https://raw.githubusercontent.com/PetroIvaniuk/2022-Ukraine-Russia-War-Dataset/main/data/russia_losses_equipment.json"
+  )
+
+
+# Fetch and read the JSON data
+dfRusEQ <- 
+  httr::GET(url[2]) |>
+  (\(x) jsonlite::fromJSON(httr::content(x, "text")))() |>
+    mutate(date = as.Date(date, format = "%Y-%m-%d"))
+
+dfRusPPL <- 
+  httr::GET(url[1]) |>
+  (\(x) jsonlite::fromJSON(httr::content(x, "text")))() |>
+    mutate(date = as.Date(date, format = "%Y-%m-%d"))
+
+dplyr::glimpse(dfRusEQ)
+dplyr::glimpse(dfRusPPL)
+
+yearMonth <- 
+  dfRusPPL |>
+    select(date) |>
+    mutate(
+      m = month(date),
+      y = year(date),
+      ym = paste0(substr(y, 3, 4), "-", m)
+    ) |>
+    arrange(date) |> pull(ym) |> unique()
+```
+```{r}
+dfRusPPL |>
+  mutate(
+    personnel = personnel - lag(personnel),
+    date = as.Date(date, format = "%Y-%m-%d"),
+    change = personnel / lag(personnel)
+  ) |> 
+  select(day, change) |> na.omit() |>
+  filter(!is.infinite(change)) |>
+  lm(change ~ day, data = _) |>
+  summary()
+
+
+asSVG(
+  (
+      dfRusPPL |>
+      mutate(
+        personnel = personnel - lag(personnel),
+        date = as.Date(date, format = "%Y-%m-%d"),
+        change = personnel / lag(personnel)
+      ) |>
+      ggplot(aes(
+        x = date,
+        y = change
+      )) +
+      geom_point(color = "#4e4946", size = 4, alpha = .6) +
+      geom_smooth(method = "lm", color = "#650000", linewidth = 2) +
+      scale_y_continuous(limits = c(NA, 4), expand = c(0, 0)) +
+      annotate(
+        "text",
+        x = as.Date("2023-10-12"),
+        y = 3,
+        label = "Based on the available data, it can be concluded that the change in Russian losses \n over time is statistically significant, suggesting a slight (-0.0003129) de-escalation of the conflict.",
+        size = 5,
+        color = "#4e4946",
+        family = "Segoe UI",
+        fontface = "bold"
+      ) +
+      labs(
+        x = "",
+        y = "Change in the Number of Russian Losses",
+        title = "Russian Invasion of Ukraine (2022-2024)",
+        subtitle = glue::glue(
+            "
+            <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> 
+            escalation of the war measured by the daily change in the number of russian losses<br>
+            <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> 
+            cases with the change bigger than 4 filtered out
+            "
+          )
+      ) +
+      theme(
+        plot.subtitle = element_markdown()
+      )
+  ),
+  save = T, name = "de-escalation.html"
+)
+
+
+```
+
+
+```{r}
+asSVG(
+  (
+      dfRusPPL |>
+      mutate(
+        personnel = personnel - lag(personnel),
+        date = as.Date(date, format = "%Y-%m-%d"),
+        w = week(date),
+        m = month(date),
+        y = year(date),
+        ym = paste0(substr(y, 3, 4), "-", m)
+      ) |>
+      ggplot(aes(
+        x = factor(ym, levels = yearMonth),
+        y = personnel
+      )) +
+      geom_boxplot(color = "#4e4946", fill = NA) +
+      labs(
+        x = "",
+        y = "Personnel Losses during the War",
+        title = "Russian Invasion of Ukraine (2022-2024)",
+        subtitle = glue::glue(
+            "
+            <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> 
+            daily russian personnel losses <br>
+            <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> 
+            divided by month, a boxplot represents 25th, 50th (median) & 75th percentile; whiskers illustrate min & max (1.5IQR); markers represent outliers
+            "
+          )
+      ) +
+      theme(
+        plot.subtitle = element_markdown()
+      )
+  ),
+  save = T, name = "RussianLosses.html"
+)
+```
+

@@ -44,4 +44,6 @@ Folders are named by the creation (or the latest modification) date. Each folder
  <img src="2024-07-01/PregnantWmn.png">
  </details>
  <details><summary>2024-07-08</summary>
+ <img src="2024-07-08/de-escalation.png">
+ <img src="2024-07-08/RussianLosses.png">
  </details>
