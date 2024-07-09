@@ -1,5 +1,5 @@
 ### parameters
-title <- "UKR-RUS"
+title <- "HighSchoolExamPL"
 createRMD <- TRUE
 createQMD <- FALSE
 createR <- FALSE
