@@ -1,0 +1,116 @@
+```{r}
+source("../main.R")
+
+pacman::p_load(
+  "cluster",
+  "factiextra",
+  "fastDummies"
+)
+```
+
+
+```{r}
+dfSearch <- eurostat::search_eurostat("Graduates by education")
+
+
+if (!exists("dfEuro", envir = .GlobalEnv)) {
+  dfEuro <- 
+    eurostat::get_eurostat("prc_hpi_a",
+      type = "label", time_format = "num"
+    )
+}
+
+  lapply(names(dfEuro), function(x) {
+    print(unique(dfEuro[,x]))
+  })
+```
+
+```{r}
+asSVG(
+dfEuro |>
+  filter(
+    purchase == "Purchases of existing dwellings",
+    unit == "Annual average index, 2010=100", 
+    !(geo %in% c(
+      "Euro area (EA11-1999, EA12-2001, EA13-2007, EA15-2008, EA16-2009, EA17-2011, EA18-2014, EA19-2015, EA20-2023)",
+      "Euro area - 19 countries  (2015-2022)",
+      "Euro area – 20 countries (from 2023)",
+      "European Union (EU6-1958, EU9-1973, EU10-1981, EU12-1986, EU15-1995, EU25-2004, EU27-2007, EU28-2013, EU27-2020)",
+      "European Union - 27 countries (from 2020)",
+      "European Union - 28 countries (2013-2020)",
+      "Türkiye"
+    ))
+  ) |>
+  group_by(geo) |>
+  mutate(mean = max(values, na.rm = T)) |>
+  ungroup() |>
+  mutate(
+    Q1 = quantile(if_else(TIME_PERIOD == 2022, mean, NA), probs = .25, na.rm = T),
+    Q2 = quantile(if_else(TIME_PERIOD == 2022, mean, NA), probs = .5, na.rm = T),
+    Q3 = quantile(if_else(TIME_PERIOD == 2022, mean, NA), probs = .75, na.rm = T),
+    cluster = case_when(
+      between(mean, 0, Q1) ~ "Q1",
+      between(mean, Q1, Q2) ~ "Q2",
+      between(mean, Q2, Q3) ~ "Q3",
+      mean >= Q3 ~ "Q4",
+      T ~ NA
+    )
+  ) |>
+    ggplot(aes(
+    x = TIME_PERIOD,
+    y = values
+  )) +
+  geom_area(aes(fill = (cluster)), show.legend = F) +
+  facet_wrap(~geo) +
+  scale_fill_manual(
+    values = c(
+      "Q1" = "#264653",
+      "Q2" = "#2a9d8f",
+      "Q3" = "#e9c46a",
+      "Q4" = "#e76f51"
+    )
+  ) +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.grid.major.x = element_line(linewidth = 1),
+      plot.subtitle = element_markdown(),
+      strip.background = element_rect(fill = "#5d524b", color = NA),
+      strip.text = element_text(color = "white", face = "bold")
+    ) +
+    geom_text(aes(
+      x = if_else(TIME_PERIOD %% 2 == 0, TIME_PERIOD, NA),
+      y = if_else(values >= 170, NA, values),
+      label = round(values, 0)
+    ), nudge_y = 5, angle = 90, color = "black", hjust = 0, fontface = "bold") +
+    geom_text(aes(
+      x = if_else(TIME_PERIOD %% 2 == 0, TIME_PERIOD, NA),
+      y = if_else(values < 170, NA, values),
+      label = round(values, 0)
+    ), nudge_y = -5, angle = 90, color = "white", hjust = 1, fontface = "bold") +
+    labs(
+      x = "",
+      fill = "",
+      y = "", 
+      title = "Inflation in the residential property market (2023)",
+      subtitle = glue::glue(
+          "
+          <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> annual average index, relative to 2015 (=100)<br>
+          <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> grouped by average inflation rate<br><br>
+          <span style = 'color: #264653; font-size: 24px;'><b>Q1</b> - countries with the lowest inflation rates</span>
+          <span style = 'color: #2a9d8f; font-size: 24px;'><b>Q2</b> - countries with below-average inflation rates.</span>
+          <span style = 'color: #e9c46a; font-size: 24px;'><b>Q3</b> - countries with above-median inflation rates</span>
+          <span style = 'color: #e76f51; font-size: 24px;'><b>Q4</b> - countries with the highest inflation rates</span>
+          "
+        ),
+      caption =  paste0("Eurostat\n", "prc_hpi_a\n", Sys.Date(), "\n MK")
+    ),
+  height = 12,
+  width = 22,
+  save = T,
+  name = "Property Inflation.html"
+)
+```
+
+
+
+

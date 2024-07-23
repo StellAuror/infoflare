@@ -1,5 +1,5 @@
 ### parameters
-title <- "HighSchoolExamPL"
+title <- "petroleum"
 createRMD <- TRUE
 createQMD <- FALSE
 createR <- FALSE
