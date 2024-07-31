@@ -1,0 +1,60 @@
+```{r}
+source("../main.R")
+
+pacman::p_load(
+  "ggraph",
+  "igraph"
+)
+
+options(scipen = 999)
+```
+
+```{r}
+# Downloaded from https://comtradeplus.un.org/TradeFlow
+dfTrade <- read_csv("TradeData_7_31_2024_21_57_43.csv")
+
+
+euCountries <- countrycode::codelist |>
+  filter(continent == "Europe") |>
+  select(country.name.en) |> pull(1)
+```
+
+```{r}
+dfTrade |>
+  filter(
+    FlowDesc == "Import",
+    ClassificationCode == "H6",
+    Period == 2023,
+    PartnerDesc %in% euCountries,
+    ReporterDesc %in% euCountries
+  ) |>
+  mutate(PrimaryValue = round(PrimaryValue/10^9, 0)) |>
+  select(PartnerDesc, ReporterDesc, PrimaryValue) -> dfTradeM
+
+
+# Filter out low-weight edges
+threshold <- .5 # Adjust this value as needed
+dfTradeM <- dfTradeM %>% filter(PrimaryValue > threshold)
+
+# Create the graph
+graph_data <- graph_from_data_frame(dfTradeM, directed = FALSE)
+
+# Set edge weights
+E(graph_data)$weight <- dfTradeM$PrimaryValue
+
+# Create the arc diagram
+p <- ggraph(graph_data, layout = "linear") + 
+  geom_edge_arc(aes(edge_alpha = weight, edge_color = weight, width = weight), show.legend = F) +
+  scale_edge_alpha(range = c(0.05, 1)) +
+  scale_edge_width(range = c(1, 1.5)) +
+  scale_edge_color_gradient(low = "lightblue", high = "darkblue") +
+  geom_node_point() +
+  geom_node_text(aes(label = name), angle = 45, vjust = 1, hjust = 1, size = 3) +
+  theme_void() +
+  theme(legend.position = "top") +
+  guides(edge_color = guide_colorbar())
+
+# Save the plot as SVG
+asSVG(p)
+```
+

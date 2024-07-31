@@ -97,7 +97,7 @@ dfEuro |>
           <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> annual average index, relative to 2015 (=100)<br>
           <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> grouped by average inflation rate<br><br>
           <span style = 'color: #264653; font-size: 24px;'><b>Q1</b> - countries with the lowest inflation rates</span>
-          <span style = 'color: #2a9d8f; font-size: 24px;'><b>Q2</b> - countries with below-average inflation rates.</span>
+          <span style = 'color: #2a9d8f; font-size: 24px;'><b>Q2</b> - countries with below-median inflation rates.</span>
           <span style = 'color: #e9c46a; font-size: 24px;'><b>Q3</b> - countries with above-median inflation rates</span>
           <span style = 'color: #e76f51; font-size: 24px;'><b>Q4</b> - countries with the highest inflation rates</span>
           "

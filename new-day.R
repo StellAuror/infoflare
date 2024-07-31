@@ -1,5 +1,5 @@
 ### parameters
-title <- "petroleum"
+title <- "InternationalTrade"
 createRMD <- TRUE
 createQMD <- FALSE
 createR <- FALSE
