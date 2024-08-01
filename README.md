@@ -10,6 +10,7 @@ Folders are named by the creation (or the latest modification) date. Each folder
 
 <details><summary>2024-06-16</summary>
  <img src="2024-06-16/subregion-1.png">
+ <img src="2024-06-16/subregion-highlight-1..png">
  <img src="2024-06-16/subregion-highlight-1.png">
  <img src="2024-06-16/subregions-countries-highlight-2.png">
  <img src="2024-06-16/yoy-subregion-1.png">
@@ -47,6 +48,12 @@ Folders are named by the creation (or the latest modification) date. Each folder
  <img src="2024-07-08/de-escalation.png">
  <img src="2024-07-08/RussianLosses.png">
  </details>
+ <details><summary>2024-07-09</summary>
+ </details>
  <details><summary>2024-07-23</summary>
  <img src="2024-07-23/Property Inflation.png">
+ </details>
+ <details><summary>2024-07-31</summary>
+ <img src="2024-07-31/EuropeTrades.png">
+ <img src="2024-07-31/InternationalTradingTreeMap.png">
  </details>

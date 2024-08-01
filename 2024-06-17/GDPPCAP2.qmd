@@ -49,7 +49,6 @@ if (!exists("dfGDP", envir = .GlobalEnv)) {
       join_by(iso3c == iso3c)
     ) |> mutate(date = as.numeric(date))
 }
-
 ```
 
 ```{r}

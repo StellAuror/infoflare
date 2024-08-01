@@ -3,7 +3,8 @@ source("../main.R")
 
 pacman::p_load(
   "ggraph",
-  "igraph"
+  "igraph",
+  "treemap"
 )
 
 options(scipen = 999)
@@ -11,7 +12,7 @@ options(scipen = 999)
 
 ```{r}
 # Downloaded from https://comtradeplus.un.org/TradeFlow
-dfTrade <- read_csv("TradeData_7_31_2024_21_57_43.csv")
+dfTrade <- read_csv("TradeData_7_31_2024_23_20_59.csv")
 
 
 euCountries <- countrycode::codelist |>
@@ -20,41 +21,124 @@ euCountries <- countrycode::codelist |>
 ```
 
 ```{r}
+sort_pair <- function(country1, country2) {
+  sorted <- sort(c(country1, country2))
+  return(paste(sorted[1], sorted[2], sep = "-"))
+}
+
 dfTrade |>
   filter(
-    FlowDesc == "Import",
-    ClassificationCode == "H6",
     Period == 2023,
     PartnerDesc %in% euCountries,
-    ReporterDesc %in% euCountries
+    ReporterDesc %in% euCountries,
+    Partner2Desc == "World",
+    FlowDesc == "Export"
   ) |>
-  mutate(PrimaryValue = round(PrimaryValue/10^9, 0)) |>
-  select(PartnerDesc, ReporterDesc, PrimaryValue) -> dfTradeM
+  select(PartnerDesc, ReporterDesc, PrimaryValue) |>
+  rowwise() |>
+  mutate(SortedPair = sort_pair(PartnerDesc, ReporterDesc)) |>
+  group_by(SortedPair) |>
+  summarise(TotalValue = sum(PrimaryValue)) |>
+  rowwise() |>
+  mutate(
+    TotalValue = round(TotalValue/10^9, 0),
+    Country1 = stringr::str_split(SortedPair, "-") |> map_chr(1),
+    Country2 = stringr::str_split(SortedPair, "-") |> map_chr(2)
+  ) |>
+  select(Country1, Country2, TotalValue) -> dfTradeM
 
+```
 
+```{r}
 # Filter out low-weight edges
-threshold <- .5 # Adjust this value as needed
-dfTradeM <- dfTradeM %>% filter(PrimaryValue > threshold)
+threshold <- 1
+dfTradeM <- dfTradeM |> filter(TotalValue > threshold)
 
 # Create the graph
 graph_data <- graph_from_data_frame(dfTradeM, directed = FALSE)
 
 # Set edge weights
-E(graph_data)$weight <- dfTradeM$PrimaryValue
+E(graph_data)$weight <- dfTradeM$TotalValue
 
 # Create the arc diagram
-p <- ggraph(graph_data, layout = "linear") + 
+p <- 
+  ggraph(graph_data, layout = "linear") + 
   geom_edge_arc(aes(edge_alpha = weight, edge_color = weight, width = weight), show.legend = F) +
-  scale_edge_alpha(range = c(0.05, 1)) +
-  scale_edge_width(range = c(1, 1.5)) +
-  scale_edge_color_gradient(low = "lightblue", high = "darkblue") +
+  scale_edge_alpha(range = c(0.1, 1)) +
+  scale_edge_width(range = c(.5, 1.5)) +
+  scale_edge_color_gradient(low = "#775b52", high = "#2a201d") +
   geom_node_point() +
+  scale_y_continuous(expand = expansion(add = 2)) +
   geom_node_text(aes(label = name), angle = 45, vjust = 1, hjust = 1, size = 3) +
   theme_void() +
-  theme(legend.position = "top") +
-  guides(edge_color = guide_colorbar())
+  theme(
+    plot.subtitle = element_markdown(),
+    legend.position = "top"
+  ) +
+  guides(edge_color = guide_colorbar()) +
+  labs(
+    x = "",
+    fill = "",
+    y = "", 
+    title = "Total Trade Flow in Europe (2023)",
+    subtitle = glue::glue(
+        "
+        <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> Trades over $1 billion only <br>
+        <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> measured as import + export given by the reporting country
+        "
+      ),
+    caption =  paste0("comtradeplus\n", "TradeFlow\n", Sys.Date(), "\n MK")
+  )
 
 # Save the plot as SVG
-asSVG(p)
+asSVG(p, scaling = 1.5, save = T, name = "EuropeTrades.html")
+```
+
+```{r}
+# Create the treemap object
+objTree <- dfTradeM |>
+  mutate(
+    id_tree = row_number(),
+    Partners = paste0(Country1, "\n", Country2)
+  ) |>
+  treemap(
+    index = c("Partners"),
+    algorithm = "pivotSize",
+    vSize = "TotalValue",
+    type = "index",
+    sortID = "id_tree",
+    mirror.y = TRUE,
+    mirror.x = TRUE,
+    border.lwds = 0.7,
+    aspRatio = 5/3
+  )
+
+# Extract the data from the treemap object
+p <- objTree$tm |>
+  as.data.frame() |>
+  ggplot(aes(xmin = x0, xmax = x0 + w, ymin = y0, ymax = y0 + h, fill = vSize)) +
+    geom_rect(show.legend = F, color = "white") +
+    geom_text(aes(x = x0 + w/2, y = y0 + h/2, label = if_else(vSize >= 30, paste0(Partners, "\n", vSize), "")), color = "white") +
+    theme_void() +
+    theme(
+      plot.subtitle = element_markdown(),
+      plot.margin = margin(10, 10, 10, 10)
+    ) +
+    scale_fill_gradient2(low = "#ffccaf", high = "#2a201d", mid = "#775b52", midpoint = 100) +
+    labs(
+      x = "",
+      fill = "",
+      y = "", 
+      title = "Total Trade Flow in Europe (2023)",
+      subtitle = glue::glue(
+          "
+          <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> trades over $1 billion only; over $30 bilion marked <br>
+          <span style = 'color: #775b52; font-size: 19px;'><b>▶</b></span> measured as import + export given by the reporting country
+          "
+        ),
+      caption =  paste0("comtradeplus\n", "TradeFlow\n", Sys.Date(), "\n MK")
+    )
+
+asSVG(p, scaling = 1.5, height = 12, width = 20, save = T, name = "InternationalTradingTreeMap.html")
 ```
 
