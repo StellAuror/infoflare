@@ -1,0 +1,88 @@
+```{r}
+source("../main.R")
+
+pacman::p_load(
+  "rvest",
+  "stringr"
+)
+
+options(scipen = 999)
+```
+
+```{r}
+nth <- function(vec, n) {
+  return(vec[n])
+}
+
+```
+
+
+```{r}
+url <- "https://en.wikipedia.org/wiki/List_of_wars_by_death_toll"
+dfPage <- 
+  read_html(url) |>
+  html_nodes('.wikitable') |>
+  html_table(fill = TRUE)
+
+dfDeath <- map_df(dfPage, rbind)
+```
+
+```{r}
+### Data preparation
+dfDeath |>
+  rowwise() |>
+  mutate(
+    # Replace those little evil signs
+    Date = str_replace(Date, "–", "-"),
+    Deathsrange = str_replace(Deathsrange, "–", "-"),
+    Deathrange = str_replace(Deathrange, "–", "-"),
+    # Getting a date range
+    isBC = str_detect(Date, "BC"),
+    Start = str_split(Date, "-") |>
+      unlist() |> nth(1) |>
+      str_extract_all("[0-9]") |>
+      unlist() |> paste0(collapse = ""),
+    End = str_split(Date, "-") |>
+      unlist() |> nth(2) |>
+      str_extract_all("[0-9]") |>
+      unlist() |> paste0(collapse = ""),
+    Start = if_else(isBC, -as.numeric(Start), as.numeric(Start)),
+    End = if_else(isBC, -as.numeric(End), as.numeric(End)),
+    # Getting a death mean of range
+    Deathrange = if_else(is.na(Deathrange), Deathsrange, Deathrange),
+    isRanged = str_detect(Deathrange, "-"),
+    meanDeath = if_else(
+      isRanged,
+      mean(c(
+        str_split(Deathrange, "-") |>
+          unlist() |> nth(1) |>
+          str_extract_all("[0-9]") |>
+          unlist() |> paste0(collapse = "") |>
+          as.numeric(),
+        str_split(Deathrange, "-") |>
+          unlist() |> nth(2) |>
+          str_extract_all("[0-9]") |>
+          unlist() |> paste0(collapse = "") |>
+          as.numeric()
+      )),
+      str_split(Deathrange, "-") |>
+          unlist() |> nth(1) |>
+          str_extract_all("[0-9]") |>
+          unlist() |> paste0(collapse = "") |>
+          as.numeric()
+    )
+  ) -> dfDeath
+```
+```{r}
+set.seed(3)
+dfDeath |>
+  ggplot() +
+  geom_point(aes(
+    x = Start,
+    y = 1,
+    size = sqrt(meanDeath + 1)
+  ), show.legend = F, position = position_jitternormal(), ) +
+  scale_size(range = c(2, 10))
+```
+
+

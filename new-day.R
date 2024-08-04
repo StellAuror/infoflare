@@ -1,5 +1,5 @@
 ### parameters
-title <- "InternationalTrade"
+title <- "Wars&Deaths"
 createRMD <- TRUE
 createQMD <- FALSE
 createR <- FALSE
