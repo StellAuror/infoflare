@@ -49,6 +49,8 @@ dfDeath |>
     Start = if_else(isBC, -as.numeric(Start), as.numeric(Start)),
     End = if_else(isBC, -as.numeric(End), as.numeric(End)),
     # Getting a death mean of range
+    Deathsrange = sub("\\[.*", "", Deathsrange),
+    Deathrange = sub("\\[.*", "", Deathrange),
     Deathrange = if_else(is.na(Deathrange), Deathsrange, Deathrange),
     isRanged = str_detect(Deathrange, "-"),
     meanDeath = if_else(
@@ -74,15 +76,218 @@ dfDeath |>
   ) -> dfDeath
 ```
 ```{r}
-set.seed(3)
+dfRegions <- read_csv2("regions.csv")
+```
+
+
+```{r}
+set.seed(3523)
+
+
 dfDeath |>
+  left_join(
+    dfRegions,
+    join_by(Location == Region)
+  ) |>
+  mutate(Continents = if_else(grepl("Europe", Continents), Continents, "Others")) |>
   ggplot() +
   geom_point(aes(
     x = Start,
-    y = 1,
-    size = sqrt(meanDeath + 1)
-  ), show.legend = F, position = position_jitternormal(), ) +
-  scale_size(range = c(2, 10))
+    y = log(meanDeath),
+    color = Continents,
+    size = (meanDeath)
+  )) +
+  scale_size(range = c(5, 50)) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line.x = element_line(linewidth = 1, color = "#837973"),
+    axis.text.x = element_text(angle = 0),
+    axis.text.y = element_blank()
+  ) +
+  scale_x_continuous(breaks = seq(
+    min(dfDeath$Start) + 49,
+    max(dfDeath$Start),
+    500
+  )) +
+  scale_y_continuous(limits = c(10, 20)) +
+  guides(
+    size = guide_none(),
+    color = guide_legend(position = "top")
+  )
 ```
 
+```{r}
+# Load necessary library
+library(dplyr)
+library(tidyr)
+
+# Define the input vector
+regions <- c(
+  "Middle East", "Greece", "China", "Italy", "Middle East / North Africa / Central Asia / India",
+  "Western Europe / North Africa", "Southern Europe / North Africa", "Tunisia", "Western Europe",
+  "Europe/North Africa/Middle East", "France", "England", "Middle East/North Africa", "Northern China",
+  "Europe", "Middle East / North Africa / Southern Europe", "Iberian Peninsula", "China, Korea", "Korea",
+  "China, Vietnam", "Europe / Middle East (\"Holy Land\")", "Eurasia", "Scotland / England", "England / Wales",
+  "Mediterranean", "Southern Europe (primarily)", "Colombia", "Mexico", "North America", "Nicaragua", "Peru",
+  "Eastern Europe / Middle East / North Africa", "Germany", "Chile", "Northern Europe (primarily)",
+  "Americas, Netherlands, Belgium, France, Portugal, Spain, England, Ireland, Atlantic Ocean", "Ireland",
+  "British Isles", "England, Scotland, and Ireland", "Candia, Crete, Dalmatia and Aegean Sea", "Poland",
+  "India-Bangladesh", "Eastern Europe", "Global (mainly Europe)", "Europe / Americas", "American South, Caribbean, Pacific and Atlantic",
+  "India, Bangladesh", "Worldwide", "Southeast Asia", "Middle East / North Africa", "Haiti", "Americas",
+  "Colombia, Ecuador, Panama, Venezuela (Viceroyalty of New Granada)", "Venezuela", "Modern day South Africa", "Russia",
+  "Spain", "Algeria", "Algeria, Tunisia, Morocco, French Indochina (Vietnam, Cambodia, and Laos), Mexico, Madagascar, West Africa",
+  "Crimean Peninsula", "India", "USA", "South America", "Central Europe", "Cuba", "France and Prussia", "Patagonia", "Indonesia",
+  "East Asia", "Brazil", "South Africa", "Philippines", "Northeast Asia", "Balkan Peninsula", "Iran", "Iraq", "Morocco", "Libya",
+  "Gran Chaco", "Ethiopia", "Finland", "Southeast Europe", "Northern Europe", "Manchuria", "South Asia", "North India / Pakistan",
+  "Myanmar", "Northeast India", "Vietnam", "Sudan", "Congo", "Angola", "Yemen", "Mozambique", "Nigeria", "Bangladesh", "East Timor",
+  "Lebanon", "Laos", "Afghanistan", "El Salvador", "Uganda", "Sri Lanka", "Somalia", "Central Africa", "Caucasus region",
+  "Kuwait, Iraq and Saudi Arabia", "Rwanda", "Bosnia", "Tajikistan", "Eritrean–Ethiopian border", "Sierra Leone", "Burundi",
+  "Algeria, Libya, Mali, Burkina Faso, Niger, Chad, Mauritania and other Maghreb and Sahel countries", "Pakistan",
+  "Nigeria with spillover into Cameroon, Chad, Mali and Niger", "Syria", "South Sudan", "Ethiopia (Tigray, Afar and Amhara Regions)",
+  "Ukraine", "Israel, Gaza Strip, spillover into West Bank, Lebanon, Syria"
+)
+
+# Define a mapping of regions to continents
+region_to_continent <- list(
+  "Middle East" = "Asia",
+  "Greece" = "Europe",
+  "China" = "Asia",
+  "Italy" = "Europe",
+  "Middle East / North Africa / Central Asia / India" = c("Asia", "Africa"),
+  "Western Europe / North Africa" = c("Europe", "Africa"),
+  "Southern Europe / North Africa" = c("Europe", "Africa"),
+  "Tunisia" = "Africa",
+  "Western Europe" = "Europe",
+  "Europe/North Africa/Middle East" = c("Europe", "Africa", "Asia"),
+  "France" = "Europe",
+  "England" = "Europe",
+  "Middle East/North Africa" = c("Asia", "Africa"),
+  "Northern China" = "Asia",
+  "Europe" = "Europe",
+  "Middle East / North Africa / Southern Europe" = c("Asia", "Africa", "Europe"),
+  "Iberian Peninsula" = "Europe",
+  "China, Korea" = "Asia",
+  "Korea" = "Asia",
+  "China, Vietnam" = "Asia",
+  "Europe / Middle East (\"Holy Land\")" = c("Europe", "Asia"),
+  "Eurasia" = c("Europe", "Asia"),
+  "Scotland / England" = "Europe",
+  "England / Wales" = "Europe",
+  "Mediterranean" = c("Europe", "Asia", "Africa"),
+  "Southern Europe (primarily)" = "Europe",
+  "Colombia" = "South America",
+  "Mexico" = "North America",
+  "North America" = "North America",
+  "Nicaragua" = "North America",
+  "Peru" = "South America",
+  "Eastern Europe / Middle East / North Africa" = c("Europe", "Asia", "Africa"),
+  "Germany" = "Europe",
+  "Chile" = "South America",
+  "Northern Europe (primarily)" = "Europe",
+  "Americas, Netherlands, Belgium, France, Portugal, Spain, England, Ireland, Atlantic Ocean" = c("North America", "Europe", "South America"),
+  "Ireland" = "Europe",
+  "British Isles" = "Europe",
+  "England, Scotland, and Ireland" = "Europe",
+  "Candia, Crete, Dalmatia and Aegean Sea" = "Europe",
+  "Poland" = "Europe",
+  "India-Bangladesh" = "Asia",
+  "Eastern Europe" = "Europe",
+  "Global (mainly Europe)" = c("Europe", "Asia", "Africa", "North America", "South America"),
+  "Europe / Americas" = c("Europe", "North America", "South America"),
+  "American South, Caribbean, Pacific and Atlantic" = c("North America", "South America"),
+  "India, Bangladesh" = "Asia",
+  "Worldwide" = c("Europe", "Asia", "Africa", "North America", "South America"),
+  "Southeast Asia" = "Asia",
+  "Middle East / North Africa" = c("Asia", "Africa"),
+  "Haiti" = "North America",
+  "Americas" = c("North America", "South America"),
+  "Colombia, Ecuador, Panama, Venezuela (Viceroyalty of New Granada)" = "South America",
+  "Venezuela" = "South America",
+  "Modern day South Africa" = "Africa",
+  "Russia" = "Europe",
+  "Spain" = "Europe",
+  "Algeria" = "Africa",
+  "Algeria, Tunisia, Morocco, French Indochina (Vietnam, Cambodia, and Laos), Mexico, Madagascar, West Africa" = c("Africa", "Asia", "North America"),
+  "Crimean Peninsula" = "Europe",
+  "India" = "Asia",
+  "USA" = "North America",
+  "South America" = "South America",
+  "Central Europe" = "Europe",
+  "Cuba" = "North America",
+  "France and Prussia" = "Europe",
+  "Patagonia" = "South America",
+  "Indonesia" = "Asia",
+  "East Asia" = "Asia",
+  "Brazil" = "South America",
+  "South Africa" = "Africa",
+  "Philippines" = "Asia",
+  "Northeast Asia" = "Asia",
+  "Balkan Peninsula" = "Europe",
+  "Iran" = "Asia",
+  "Iraq" = "Asia",
+  "Morocco" = "Africa",
+  "Libya" = "Africa",
+  "Gran Chaco" = "South America",
+  "Ethiopia" = "Africa",
+  "Finland" = "Europe",
+  "Southeast Europe" = "Europe",
+  "Northern Europe" = "Europe",
+  "Manchuria" = "Asia",
+  "South Asia" = "Asia",
+  "North India / Pakistan" = "Asia",
+  "Myanmar" = "Asia",
+  "Northeast India" = "Asia",
+  "Vietnam" = "Asia",
+  "Sudan" = "Africa",
+  "Congo" = "Africa",
+  "Angola" = "Africa",
+  "Yemen" = "Asia",
+  "Mozambique" = "Africa",
+  "Nigeria" = "Africa",
+  "Bangladesh" = "Asia",
+  "East Timor" = "Asia",
+  "Lebanon" = "Asia",
+  "Laos" = "Asia",
+  "Afghanistan" = "Asia",
+  "El Salvador" = "North America",
+  "Uganda" = "Africa",
+  "Sri Lanka" = "Asia",
+  "Somalia" = "Africa",
+  "Central Africa" = "Africa",
+  "Caucasus region" = "Asia",
+  "Kuwait, Iraq and Saudi Arabia" = "Asia",
+  "Rwanda" = "Africa",
+  "Bosnia" = "Europe",
+  "Tajikistan" = "Asia",
+  "Eritrean–Ethiopian border" = "Africa",
+  "Sierra Leone" = "Africa",
+  "Burundi" = "Africa",
+  "Algeria, Libya, Mali, Burkina Faso, Niger, Chad, Mauritania and other Maghreb and Sahel countries" = "Africa",
+  "Pakistan" = "Asia",
+  "Nigeria with spillover into Cameroon, Chad, Mali and Niger" = "Africa",
+  "Syria" = "Asia",
+  "South Sudan" = "Africa",
+  "Ethiopia (Tigray, Afar and Amhara Regions)" = "Africa",
+  "Ukraine" = "Europe",
+  "Israel, Gaza Strip, spillover into West Bank, Lebanon, Syria" = "Asia"
+)
+
+# Function to get continents from a region
+get_continents <- function(region) {
+  matches <- region_to_continent[grep(region, names(region_to_continent))]
+  sort(unique(unlist(matches)))
+}
+
+# Create a data frame
+df <- data.frame(
+  Region = regions,
+  Continents = sapply(regions, function(x) paste(get_continents(x), collapse = ", "))
+)
+
+# Print the data frame
+write_csv2(df, "regions.csv")
+
+
+```
 
