@@ -118,13 +118,12 @@ p <- objTree$tm |>
   as.data.frame() |>
   ggplot(aes(xmin = x0, xmax = x0 + w, ymin = y0, ymax = y0 + h, fill = vSize)) +
     geom_rect(show.legend = F, color = "white") +
-    geom_text(aes(x = x0 + w/2, y = y0 + h/2, label = if_else(vSize >= 30, paste0(Partners, "\n", vSize), "")), color = "white") +
+    geom_text(aes(x = x0 + w/2, y = y0 + h/2, label = if_else(vSize >= 30, Partners, "")), color = "white") +
     theme_void() +
     theme(
-      plot.subtitle = element_markdown(),
-      plot.margin = margin(10, 10, 10, 10)
+      plot.subtitle = element_markdown()
     ) +
-    scale_fill_gradient2(low = "#ffccaf", high = "#2a201d", mid = "#775b52", midpoint = 100) +
+    scale_fill_gradient(low = "#775b52", high = "#2a201d") +
     labs(
       x = "",
       fill = "",
@@ -139,6 +138,6 @@ p <- objTree$tm |>
       caption =  paste0("comtradeplus\n", "TradeFlow\n", Sys.Date(), "\n MK")
     )
 
-asSVG(p, scaling = 1.5, height = 12, width = 20, save = T, name = "InternationalTradingTreeMap.html")
+asSVG(p, scaling = 1.5, height = 12, width = 20)
 ```
 

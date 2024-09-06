@@ -1,0 +1,57 @@
+```{r}
+source("../main.R")
+```
+
+```{r}
+(dfsearch <- eurostat::search_eurostat("household") |>
+   mutate(
+    data.start = as.numeric(data.start),
+    data.end = as.numeric(data.end),
+    duration = data.end - data.start
+  ) |>
+   filter(duration > 5))
+
+
+if (!exists("dfFriends", envir = .GlobalEnv)) {
+  dfFriends <- 
+    eurostat::get_eurostat("ilc_scp12",
+      type = "label", time_format = "num"
+    )
+}
+
+```
+
+```{r}
+sapply(dfFriends, unique) 
+
+dfFriends |>
+  filter(
+    pers_cat == "Family and relatives",
+    deg_urb == "Total",
+    #frequenc == "Every day",
+    #hhcomp == "Total",
+    quant_inc == "Total",
+    geo != "European Union - 27 countries (from 2020)"
+  ) |>
+  pivot_wider(values_from = "values", names_from = "frequenc") |>
+  mutate(
+    `More than once a year` = 100 - (`At least once a year` + `Not in the last 12 months`),
+  #  TIME_PERIOD = if_else(TIME_PERIOD == 2017, 1, 3)
+  ) |>
+  ggplot() +
+  geom_boxplot(aes(
+    x = (TIME_PERIOD),
+    y = `More than once a year`,
+    color = TIME_PERIOD,
+    group = TIME_PERIOD
+  ), show.legend = F, size = 2) +
+  theme_void() +
+  theme(
+    axis.line.y = element_line(),
+    axis.ticks.y = element_line(),
+    axis.text.y = element_text()
+  ) +
+  facet_wrap(~hhcomp)
+
+```
+

@@ -22,9 +22,20 @@ pacman::p_load(
   "patchwork",
   # OMG
   "ggforce",
-  "gghighlight"
+  "gghighlight",
+  # Manual Font Addition
+  "showtext"
 )
 
+# Load Fonts
+# loadfonts()
+
+# Check avaiable fonts
+# fonts()
+
+# Add font
+#font_add("Proxima Nova", "2024-09-06/ProximaNova-Light.ttf")
+#font_add("Proxima Nova Bold", "2024-09-06/ProximaNova-Bold.ttf")
 
 ###### GGPLOT THEME ###### 
 theme_set(theme_minimal())

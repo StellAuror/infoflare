@@ -1,5 +1,5 @@
 ### parameters
-title <- "Wars&Deaths"
+title <- "Country Statistics"
 createRMD <- TRUE
 createQMD <- FALSE
 createR <- FALSE

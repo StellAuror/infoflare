@@ -1,0 +1,137 @@
+
+```{r}
+source("../main.R")
+
+pacman::p_load(
+  "rvest"
+)
+```
+
+
+```{r}
+url <- "https://pl.wikipedia.org/wiki/Demografia_Polski"
+dfList <- 
+  read_html(url) %>%
+  html_nodes(., '.wikitable') %>%
+  html_table(., fill = TRUE)
+
+dfAgePosition <- which(sapply(dfList, nrow) == 26 & sapply(dfList, ncol) == 5)
+dfAge <- dfList[[dfAgePosition[2]]]
+
+dfPopChangePosition <- which(sapply(dfList, ncol) == 12)
+dfPopChange <- dfList[[dfPopChangePosition]]
+
+names(dfAge) <- c("Age", "Men", "Women", "All", "%age")
+```
+
+
+```{r}
+
+dfPopChange %>% 
+  mutate(
+    Przyrostnaturalny =  round(sub("−", "-", sub("–", "-", sub(" ", "", Przyrostnaturalny))) %>% as.numeric / 1000, 0),
+    Rok = as.numeric(substr(Rok, 1, 4))
+  ) %>%
+  ggplot(aes(
+    x = Rok,
+    y = Przyrostnaturalny
+  )) +
+  geom_col(fill = "#fca311") +
+  geom_text(aes(
+    label = format(Przyrostnaturalny, big.mark = " ", scientific = F),
+    hjust = case_when(
+      Przyrostnaturalny >= 10*5 ~ 1,
+      Przyrostnaturalny >= 0 ~ 0,
+      Przyrostnaturalny < -10*5 ~ 0,
+      T ~ 1
+    ),
+    color = case_when(
+      Przyrostnaturalny >=  10*5 ~ "white",
+      Przyrostnaturalny >= 0 ~ "black",
+      Przyrostnaturalny < -10*5 ~ "white",
+      T ~ "black"
+    )
+  ), angle = 90, show.legend = F, fontface = "bold", size = 4.3) +
+  scale_color_manual(values = c("#111d2b", "white")) +
+  scale_y_continuous(
+    breaks = seq(-200000, 600000, 100000),
+    labels = format(abs(seq(-200000, 600000, 100000)), big.mark = " ", scientific = F)
+   ) +
+  scale_x_continuous(
+    breaks = seq(1946, 2023, 5),
+    labels = seq(1946, 2023, 5),
+    expand = c(0, 0)
+   ) +
+  labs(
+    x = "",
+    y = "Natural Increase (in thousand)",
+    title = "Poland's Natural Increase (1946-2023)",
+     subtitle = glue::glue(
+    "
+    <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> 
+    difference between the number of live births and the number of deaths <br>
+    <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> 
+    in thousand, rounded to the nearest thousand
+    "
+   ),
+    caption = paste0("Polish Wikipedia \n", "Demography\n", Sys.Date(), "\nMK"),
+  ) +
+  theme(
+    panel.grid.major.x = element_line(),
+    panel.grid.minor.x = element_blank(),
+    plot.margin = unit(c(1, .2, 1, .2), "cm"),
+    plot.subtitle = element_markdown()
+  ) -> p
+
+asSVG(p, width = 20, height = 12, save = T, name = "PLNaturalIncease.html")
+
+```
+
+```{r}
+dfPopChange %>%
+  mutate(
+    Urodzeniażywe =  round(sub("−", "-", sub("–", "-", sub(" ", "", Urodzeniażywe))) %>% as.numeric / 1000, 0),
+    Rok = as.numeric(substr(Rok, 1, 4))
+  ) %>%
+  ggplot(aes(
+    x = Rok,
+    y = Urodzeniażywe
+  )) +
+  geom_area(fill = "#6c584c") +
+  geom_text(aes(
+    label = format(Urodzeniażywe, big.mark = " ", scientific = F),
+    hjust = 1
+  ), angle = 90, show.legend = F, fontface = "bold", size = 4.3, color = "white") +
+  scale_y_continuous(
+    breaks = seq(-200000, 600000, 100000),
+    labels = format(abs(seq(-200000, 600000, 100000)), big.mark = " ", scientific = F)
+   ) +
+  scale_x_continuous(
+    breaks = seq(1946, 2023, 5),
+    labels = seq(1946, 2023, 5),
+    expand = c(0, 0)
+   ) +
+  labs(
+    x = "",
+    y = "Live Births (in thousand)",
+    title = "Poland's Live Births (1946-2023)",
+     subtitle = glue::glue(
+    "
+    <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> 
+    difference between the number of live births and the number of deaths <br>
+    <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> 
+    in thousand, rounded to the nearest thousand
+    "
+   ),
+    caption = paste0("Polish Wikipedia \n", "Demography\n", Sys.Date(), "\nMK"),
+  ) +
+  theme(
+    panel.grid.major.x = element_line(),
+    panel.grid.minor.x = element_blank(),
+    plot.margin = unit(c(1, .2, 1, .2), "cm"),
+    plot.subtitle = element_markdown()
+  ) -> p
+
+asSVG(p, width = 20, height = 12)
+```
+

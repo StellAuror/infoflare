@@ -1,0 +1,85 @@
+```{r}
+source("../main.R")
+
+options(scipen = 999)
+showtext.auto()
+```
+
+```{r}
+df <- readxl::read_excel("WEO data.xlsx")
+
+df |>
+  mutate(Statistic = paste(`Subject Descriptor`, Scale, Units, sep = "---")) |> 
+  pull(Statistic) |> unique()
+
+stats <- c(
+  "Gross domestic product, constant prices---Units---Percent change",  # [2] % zmiana PKB w cenach stałych
+  "Gross domestic product per capita, constant prices---Units---Purchasing power parity; 2017 international dollar",  # [8] PKB na mieszkańca w PPP
+  "Inflation, average consumer prices---Units---Percent change",  # [18] inflacja
+  "Unemployment rate---Units---Percent of total labor force",  # [25] bezrobocie
+  "General government revenue---Units---Percent of GDP",  # [29] dochody rządowe jako % PKB
+  "General government total expenditure---Units---Percent of GDP",  # [31] wydatki rządowe jako % PKB
+  "Current account balance---Units---Percent of GDP"  # [44] saldo rachunku bieżącego jako % PKB
+)
+```
+
+```{r}
+minmaxScale <- function(x) {
+  x <- log(x)
+  return((x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T)))
+}
+
+
+df1 <- df |>
+  mutate(Statistic = paste(`Subject Descriptor`, Scale, Units, sep = "---"))  |> 
+  filter(Statistic %in% stats) |>
+  pivot_longer(cols = as.character(1980:2024), names_to = "Year", values_to = "Value") |>
+  filter(Year == "2022") |>
+  mutate(Value = as.numeric(gsub(",", "", Value)), Year = as.numeric(Year)) |>
+  group_by(`Subject Descriptor`) |>
+  mutate(Value = minmaxScale(Value)) |>
+  group_by(Country) |>
+  mutate(
+    n = row_number(),
+    Value = if_else(`Subject Descriptor` == "Unemployment rate", 1 - Value, Value),
+    `Subject Descriptor` = if_else(`Subject Descriptor` == "Unemployment rate", "Employment rate", `Subject Descriptor`)
+  )
+
+df2 <- df1 |> mutate(n = n - .6, Value = Value / 4)
+df3 <- df1 |> mutate(n = n + .6, Value = Value / 4)
+df4 <- df1 |> mutate(n = n - .45, Value = Value / 2)
+df5 <- df1 |> mutate(n = n + .45, Value = Value / 2)
+
+asSVG((
+  rbind(df1, df2, df3, df4, df5) |>
+  ggplot(aes(x = n, y = Value)) +
+  geom_area(aes(fill = `Subject Descriptor`), position = position_dodge()) +
+  facet_wrap(~Country, nrow = 3) +
+  coord_polar() +
+  scale_fill_viridis_d(option = "plasma", direction = 1) +
+  scale_color_viridis_d(option = "plasma", direction = 1) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    legend.position = "bottom",
+    text = element_text(color = "#5d524b", family = "Proxima Nova", size = 18),
+    plot.title = element_text(color = "#5d524b", family = "Proxima Nova Bold", size = 36),
+    plot.subtitle = element_text(color = "#5d524b",  size = 24)
+  ) +
+  guides(fill = guide_legend(direction = "horizontal")) +
+  scale_y_continuous(limits = 0:1) +
+  labs(
+    x = "",
+    fill = "",
+    y = "", 
+    title = str_wrap("Key Economic Indicators Across Countries: A Comparative Analysis (2022)"),
+    subtitle = glue::glue(
+        "A Multi-Metric Overview of Key Economic Indicators Visualized for 19 European Nations" |> tolower()
+      ),
+    caption =  paste0("WEO\n", "Country Economy\n", Sys.Date(), "\n MK")
+  )
+), height = 12, width = 19, save = T, name = "flowers.html") 
+  
+```
+
+
