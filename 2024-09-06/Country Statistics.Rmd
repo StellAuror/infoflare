@@ -74,7 +74,7 @@ asSVG((
     y = "", 
     title = str_wrap("Key Economic Indicators Across Countries: A Comparative Analysis (2022)"),
     subtitle = glue::glue(
-        "A Multi-Metric Overview of Key Economic Indicators Visualized for 19 European Nations" |> tolower()
+        "A Multi-Metric Overview of Key Economic Indicators, scaled [0:1]" |> tolower()
       ),
     caption =  paste0("WEO\n", "Country Economy\n", Sys.Date(), "\n MK")
   )
