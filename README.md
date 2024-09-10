@@ -65,4 +65,8 @@ Folders are named by the creation (or the latest modification) date. Each folder
  <details><summary>2024-08-10</summary>
  </details>
  <details><summary>2024-09-06</summary>
+ <img src="2024-09-06/flowers.png">
+ </details>
+ <details><summary>2024-09-09</summary>
+ <img src="2024-09-09/FlightsEU.png">
  </details>

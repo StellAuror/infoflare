@@ -1,0 +1,202 @@
+```{r}
+source("../main.R")
+
+```
+
+```{r}
+(eurostat::search_eurostat("flights"))
+
+df <- eurostat::get_eurostat("avia_tf_cm", type = "label", time_format = "num")
+
+font_add_google("Gudea", "Gudea")
+setTheme(family = "Gudea")
+showtext_auto(enable = T)
+
+```
+
+
+```{r}
+df |>
+  filter(
+    schedule == "Total",
+    unit == "Number",
+    !(geo %in% c("European Union - 28 countries (2013-2020)", "European Union - 27 countries (from 2020)"))
+  ) -> dfTemp
+
+top <- dfTemp |> 
+  group_by(geo) |>
+  summarise(top = sum(values)) |>
+  arrange(-top) |> head(15) |> pull(1) 
+   
+df |> arrange(-TIME_PERIOD)
+```
+
+
+```{r}
+dfTemp |>
+  filter(geo %in% top) |>
+  summarise(
+    P05 = quantile(values, probs = .05),
+    P15 = quantile(values, probs = .15),
+    P25 = quantile(values, probs = .25),
+    P50 = quantile(values, probs = .50),
+    P75 = quantile(values, probs = .75),
+    P85 = quantile(values, probs = .85),
+    P95 = quantile(values, probs = .95),
+    AVG = mean(values)
+  ) -> dfTempAll
+
+dfTempAll |> 
+  ggplot(aes(y = 1)) +
+  ggridges::geom_density_ridges(
+    data = dfTemp |> filter(geo %in% top),
+    aes(x = values),
+    color = NA, fill = "#dfdfdf",
+    scale = 100000
+  ) +
+  geom_segment(aes(x = P05, xend = P15), color = "#bcd9d7", linewidth = 7) +
+  geom_segment(aes(x = P15, xend = P25), color = "#7ba9a9", linewidth = 7) +
+  geom_segment(aes(x = P25, xend = P75), color = "#3a595c", linewidth = 7) +
+  geom_segment(aes(x = P75, xend = P85), color = "#7ba9a9", linewidth = 7) +
+  geom_segment(aes(x = P85, xend = P95), color = "#bcd9d7", linewidth = 7) +
+  geom_point(aes(x = AVG), color = "white", size = 8) + 
+  geom_point(aes(x = P50), color = "black", size = 11) + 
+  annotate(
+    geom = "text", x = 7000, y = .6,
+    label = "50% of observations \n fall within this range",
+    hjust = 0, color = "#3a595c", fontface = "bold"
+  ) +
+  annotate(
+    geom = "text", x = 80000, y = .6,
+    label = "80% within \nthis range",
+    hjust = 0, color = "#7ba9a9", fontface = "bold"
+  ) +
+  annotate(
+    geom = "text", x = 125000, y = .6,
+    label = "90% falls \nhere",
+    hjust = 0, color = "#bcd9d7", fontface = "bold"
+  ) +
+  annotate(
+    geom = "text", x = 25000, y = 1.5,
+    label = "average",
+    hjust = 0, color = "black", fontface = "bold"
+  ) +
+  annotate(
+    geom = "text", x = 45000, y = 1.3,
+    label = "median",
+    hjust = 0, color = "white", fontface = "bold"
+  ) +
+  theme_void() +
+  scale_y_continuous(limits = c(.2, 3)) +
+  theme(plot.background = element_rect(fill = "#fff9f5", color = "#dfdfdf", linewidth = 3)) -> legend
+```
+
+```{r}
+text <- tibble(
+  x = 0, y = 0,
+  label = "Visual representation of monthly commercial flight data by European country, categorized by type of schedule. Each country's data shows the distribution of flight counts, with variations in flight volume across different percentiles, providing insights into typical flight patterns and outliers in commercial aviation."
+)
+
+title <- ggplot(text, aes(x = x, y = y)) +
+  geom_textbox(
+    aes(label = label),
+    width = unit(40, "lines"),
+    box.color = "#fff9f5", fill = "#fff9f5", 
+    size = 7, lineheight = 1, family = "Gudea"
+  ) +
+  theme_void() +
+  theme(text = element_text(color = "#5d524b", family = "Gudea", size = 18))
+title
+
+text <- tibble(
+  x = 0, y = 0,
+  label = toupper(
+    "Monthly Commercial Flights Across European Countries <br> (2019 - Jul 2024)"
+  )
+)
+
+sub <- ggplot(text, aes(x = x, y = y)) +
+  geom_textbox(
+    aes(label = label),
+    width = unit(20, "lines"),
+    box.color = "#fff9f5", fill = "#fff9f5",
+   size = 10, lineheight = 1, hjust = 0.5, vjust = .5, family = "Gudea", 
+  ) +
+  coord_cartesian(expand = F, clip = "off") +
+  theme_void() +
+  theme(text = element_text(color = "#5d524b", size = 18))
+sub
+
+```
+
+
+```{r}
+topOrdered <- data.frame(
+  top = top,
+  order = 1:length(top)
+)
+
+dfTemp |>
+  inner_join(topOrdered, join_by(geo == top)) |>
+  group_by(geo, order) |>
+  summarise(
+    P05 = quantile(values, probs = .05),
+    P15 = quantile(values, probs = .15),
+    P25 = quantile(values, probs = .25),
+    P50 = quantile(values, probs = .50),
+    P75 = quantile(values, probs = .75),
+    P85 = quantile(values, probs = .85),
+    P95 = quantile(values, probs = .95),
+    AVG = mean(values)
+  ) |>
+  ggplot(aes(y = reorder(geo, order))) +
+  ggridges::geom_density_ridges(
+    data = (dfTemp |> filter(geo %in% top)),
+    aes(y = geo, x = values),
+    color = NA, fill = "#dfdfdf",
+    scale = .8
+  ) +
+  geom_vline(xintercept = dfTempAll$P50, linetype = "dashed", linewidth = 1, color = "#5e5e5e") +
+  annotate("text", x = dfTempAll$P50 * 1.18,  y = 15.5, label = "median", color = "#5e5e5e") +
+  geom_segment(aes(x = P05, xend = P15), color = "#bcd9d7", linewidth = 4) +
+  geom_segment(aes(x = P15, xend = P25), color = "#7ba9a9", linewidth = 4) +
+  geom_segment(aes(x = P25, xend = P75), color = "#3a595c", linewidth = 4) +
+  geom_segment(aes(x = P75, xend = P85), color = "#7ba9a9", linewidth = 4) +
+  geom_segment(aes(x = P85, xend = P95), color = "#bcd9d7", linewidth = 4) +
+  geom_point(aes(x = AVG), color = "white", size = 4) + 
+  geom_point(aes(x = P50), color = "black", size = 6) + 
+  scale_x_continuous(breaks = seq(0, 200000, 50000), labels = paste0(seq(0, 200, 50), "k")) +
+  labs(
+    x = "", y = "",
+    caption =  paste0("Eurostat\n", "avia_tf_cm\n", Sys.Date(), "\n MK")
+  ) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    axis.text.x = element_text(angle = 0),
+    plot.title = element_markdown(
+      hjust = .5,size = 34, color = "black", lineheight = .8,
+      face = "bold", margin = margin(20,0,30,0)
+    ),
+    plot.subtitle = element_markdown(
+      hjust = .5, size = 18, color = "black", lineheight = 1,
+      margin = margin(10,0,30,0)
+    ),
+    plot.caption = element_text(
+      family = "Gudea"
+    )
+  ) -> p
+
+p
+```
+
+```{r}
+p <- p + inset_element(legend, l = 0.5, r = 1,  t = 1, b = 0.6, clip = F)
+
+((sub + title + plot_layout(widths = c(1, 4))) / p + plot_layout(heights = c(1, 2))) |>
+asSVG(15, 12, save = T, name = "FlightsEU.html")
+```
+
+
+
+
