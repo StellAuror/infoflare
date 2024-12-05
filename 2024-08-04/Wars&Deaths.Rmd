@@ -34,7 +34,7 @@ dfDeath |>
   mutate(
     # Replace those little evil signs
     Date = str_replace(Date, "–", "-"),
-    Deathsrange = str_replace(Deathsrange, "–", "-"),
+    Deathsrange = str_replace(Deathrange, "–", "-"),
     Deathrange = str_replace(Deathrange, "–", "-"),
     # Getting a date range
     isBC = str_detect(Date, "BC"),
@@ -112,7 +112,6 @@ dfDeath |>
       max(dfDeath$Start),
       500
     ),
-    labels = c("500BC", "1", "500", "1000", "1500", "2000")
   ) +
   scale_y_continuous(
     limits = c(10, 19),
@@ -161,58 +160,5 @@ dfDeath |>
 asSVG(p, width = 22, 10, save = T, name = "DeahToll.html")
 ```
 
-```{r}
-set.seed(3523)
-
-
-dfDeath |>
-  left_join(
-    dfRegions,
-    join_by(Location == Region)
-  ) |>
-  arrange(Start) |>
-  ungroup() |>
-  mutate(
-    Continents = if_else(grepl("Europe", Continents), Continents, "Not Europe"),
-    meanDeath = cumsum(meanDeath)
-  ) |>
-  ggplot() +
-  geom_area(aes(
-    x = Start,
-    y = meanDeath,
-  ), alpha = .6) +
-  theme(
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    axis.line.x = element_line(linewidth = 1, color = "#837973"),
-    axis.line.y = element_line(linewidth = 1, color = "#837973"),
-    axis.text.x = element_text(angle = 0),
-    axis.text.y = element_text(),
-    panel.grid.major.x = element_line(linewidth = .8),
-    plot.subtitle = element_markdown()
-  ) +
-  guides(
-    size = guide_none(),
-    color = guide_legend(
-      position = "top", override.aes = list(size = 5)
-    )
-  ) +
-  labs(
-    x = "", y = "Mean ofEstimatd Death Toll",
-    color = "",
-    caption =  paste0("English Wikipedia \n", "Wars by Death Toll\n", Sys.Date(), "\nMK"),
-    title = "The Bane of War",
-     subtitle = glue::glue(
-        "
-        <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> 
-        wars fought at least partly on european territory highlighted <br>
-                <span style = 'color: #5d524b; font-size: 19px;'><b>▶</b></span> 
-        death toll below 10 000 deaths not included <br>
-        "
-      )
-  ) -> p
-
-
-asSVG(p, width = 22, 10, save = T, name = "DeahToll.html")
 ```
 

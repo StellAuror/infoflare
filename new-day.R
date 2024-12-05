@@ -1,5 +1,5 @@
 ### parameters
-title <- "TolkienUniverse"
+title <- "Olypics"
 createRMD <- TRUE
 createQMD <- FALSE
 createR <- FALSE

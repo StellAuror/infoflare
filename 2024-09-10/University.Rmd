@@ -1,0 +1,122 @@
+```{r}
+source("../main.R")
+
+(eurostat::search_eurostat("GDP"))
+
+ dfBook <- eurostat::get_eurostat("ilc_scp31", type = "label", time_format = "num")
+ dfGDP <-  eurostat::get_eurostat("nama_10_pc", type = "label", time_format = "num")
+
+ dfGDP |> select_if(is.character) |> sapply(unique) 
+```
+
+```{r}
+
+topReaders <- dfBook |>
+  filter(
+    n_book == "No books",
+    age == "16 years or over",
+    sex == "Total",
+    yn_arope == "Total",
+    geo != "European Union - 27 countries (from 2020)"
+  ) |>
+  arrange(values) |> na.omit() |>
+  mutate(ranking = row_number()) |>
+  select(geo, ranking)
+
+dfBook |> 
+  filter(
+    age == "16 years or over",
+    sex != "Total",
+    yn_arope == "Total",
+    geo != "European Union - 27 countries (from 2020)"
+  ) |>
+  inner_join(topReaders, join_by(geo == geo)) |>
+  mutate(
+    n_book = factor(
+      n_book,
+      levels = c("No books", "Less than 5 books", "From 5 to 9 books", "10 books or more"),
+      ordered = T
+    )
+  ) |>
+  ggplot(aes(
+    y = reorder(geo, -ranking),
+    x = values,
+    fill = n_book
+  )) +
+  geom_col() +
+  facet_wrap(~sex) + 
+  scale_fill_manual(values = c("#eaeced", "#a4cae9", "#6e9fc0", "#39597e"))
+
+```
+```{r}
+dfGDPpc2022 <- dfGDP |>
+  filter(
+    unit == "Current prices, euro per capita",
+    TIME_PERIOD == 2022,
+    na_item == "Gross domestic product at market prices",
+    !grepl("uro", geo)
+  )
+
+dfBookTotal2022 <- dfBook |> 
+  filter(
+    age == "16 years or over",
+    sex == "Total",
+    yn_arope == "Total",
+    geo != "European Union - 27 countries (from 2020)"
+  ) |>
+  mutate(reader = if_else(n_book == "No books", "Did not read", "Read")) |>
+  group_by(reader, geo) |>
+  summarise(values = sum(values))
+
+dfBookGroups2022 <- dfBook |> 
+  filter(
+    age == "16 years or over",
+    sex == "Total",
+    yn_arope == "Total",
+    geo != "European Union - 27 countries (from 2020)"
+  ) |>
+  select(n_book, geo, values) 
+  
+```
+
+```{r}
+dfGDPpc2022 |>
+  inner_join(
+    dfBookTotal2022,
+    join_by(geo == geo)
+  ) |>
+  filter(reader == "Read") |>
+  ggplot(aes(x = values.y, y = values.x)) +
+  geom_smooth(method = "lm", se = F) +
+  geom_point() +
+  labs(x = "% of ppl who read any book within 12 months", y = "GDP per capita")
+ 
+
+
+
+temp <- dfGDPpc2022 |>
+  inner_join(
+    dfBookGroups2022,
+    join_by(geo == geo)
+  ) |>
+  filter(n_book != "No books") 
+
+
+temp <- temp |>
+  group_by(n_book) |>
+  summarise(r = summary(lm(log(values.x) ~ values.y))$r.squared)
+
+dfGDPpc2022 |>
+  inner_join(
+    dfBookGroups2022,
+    join_by(geo == geo)
+  ) |>
+  filter(n_book != "No books")  |>
+  ggplot(aes(x = values.y, y = values.x, color = n_book)) +
+  stat_smooth(method = "lm", se = F, ) +
+  geom_point(size = 5) +
+  labs(x = "% of ppl who read any book within 12 months", y = "GDP per capita") +
+  geom_text(data = temp, aes(x = rep(30, 3), y = rep(10000, 3), label = paste("R^2 = ", round(r, 2))), color = "black") +
+  facet_wrap(~n_book)
+```
+

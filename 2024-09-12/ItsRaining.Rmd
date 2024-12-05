@@ -1,0 +1,95 @@
+```{r}
+source("../main.R")
+pacman::p_load(
+  "openmeteo",
+  "lubirdate"
+)
+
+font_add_google("Gudea", "Gudea")
+setTheme(family = "Gudea")
+showtext_auto(enable = T)
+```
+
+```{r}
+locations <- c(
+  "Nysa",
+  "Międzygórze",
+  "Głuchołazy",
+  "Otmuchów",
+  "Prudnik",
+  "Wrocław",
+  "Kłodzko",
+  "Bystrzyca Kłodzka",
+  "Červenohorské sedlo",
+  "Jeseník",
+  "Zittau"
+)
+
+lapply(locations, function(x) {
+  locStation <- 
+  openmeteo::geocode(x)$name
+  cbind(
+    openmeteo::weather_history(
+    location = locStation, 
+    start = "1997-01-01",
+    end = "1997-12-31",
+    hourly = "precipitation"
+  ),
+  "city" = locStation
+  )
+}) |> map_df(rbind) -> df1997
+```
+
+```{r}
+local_cumsum <- function(x) {
+  result <- numeric(length(x))  
+  sum_val <- 0                  
+  
+  for (i in seq_along(x)) {
+    if (x[i] == 0) {
+      sum_val <- 0  
+    } else {
+      sum_val <- sum_val + x[i]
+    }
+    result[i] <- sum_val  
+  }
+  return(result)
+}
+
+df1997 |>
+  rename("value" = hourly_precipitation) |>
+  group_by(city) |>
+  mutate(
+    sum = local_cumsum(value),
+    day = day(datetime),
+    month = month(datetime),
+    year = year(datetime)
+  ) |>
+  group_by(city, year, month, day) |>
+  summarise(
+    sum = max(sum),
+    avg = mean(value),
+    .groups = "drop"
+    
+  ) |>
+  mutate(date = as.Date(paste(year, month, day, sep = "-"))) -> dfPrecip
+
+  
+
+```
+
+
+```{r}
+dfPrecip |>
+  filter(
+    between(date, as.Date("1997-07-01"), as.Date("1997-07-14"))
+  ) |>
+  ggplot(aes(
+    x = date,
+    y = sum,
+    col = city,
+    group = city
+  )) +
+  geom_line(position = "dodge")
+
+```
