@@ -57,7 +57,7 @@ Folders are named by the creation (or the latest modification) date. Each folder
  <img src="2024-07-31/InternationalTradingTreeMap.png">
  </details>
  <details><summary>2024-08-04</summary>
- <img src="2024-08-04/DeahToll.png">
+ <img src="2024-08-04/DeahToll.jpg">
  </details>
  <details><summary>2024-08-09</summary>
  <img src="2024-08-09/PLNaturalIncease.png">
